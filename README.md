@@ -28,9 +28,11 @@ lives are unlimited
 as you die levels increase - basically robots move faster too a point and then
 game goes back to level zero 
 
-voices were created using a articifial voice program
+voices were created using a articifial voice program called eSpeak
 
 when you run into a wall or robot - that was me going aghahgahghagh - hahah
+
+blasting effects were created using SoX
 
 fun game to make - not complete - but learned python and a game in 3 weeks not bad 
 
