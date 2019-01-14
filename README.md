@@ -1,6 +1,11 @@
 **PyZerk**
 ===================
-Three week project where I attempted to learn python and make my first working game.  Aiming to create a Berzerk like game.  Recently I found this project on github which is much better and polished clone of berzerk: 
+Three week project where I attempted to learn python and make my first working game.  Aiming to create a Berzerk like game.  
+
+youtube video of some gameplay:
+https://www.youtube.com/watch?v=7LbB4dXbi1Q&t=2s
+
+Recently I found this project on github which is much better and polished clone of berzerk: 
 
 https://github.com/flyingthing/PyBerzerk
 
