@@ -1,6 +1,6 @@
 **PyZerk**
 ===================
-Three week project where I attempted to learn python and make my first working game.  Aiming to create a Berzerk like game.  
+Three week project where I attempted to learn python and make my first working game.  Aiming to create a Berserk like game.  
 
 youtube video of some gameplay:
 https://www.youtube.com/watch?v=7LbB4dXbi1Q&t=2s
