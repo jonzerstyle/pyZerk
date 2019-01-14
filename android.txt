@@ -1,0 +1,5 @@
+title=pyzerk
+author=JONZER
+api=1
+orientation=landscape
+
