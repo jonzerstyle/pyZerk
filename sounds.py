@@ -33,7 +33,7 @@ if (globals.SOUNDS_ON == True):
     nextLevelSound.set_volume(1.0)
     ottoAliveSound = mixer.Sound("sounds/otto.wav")
     ottoAliveSound.set_volume(1.0)
-    soundTrack0Sound = mixer.Sound("sounds/ORION.ogg")
+    soundTrack0Sound = mixer.Sound("sounds/BMUSIC.wav")
     soundTrack0Sound.set_volume(0.25)
 
     mixer.set_reserved(SOUNDTRACK_CHAN)
