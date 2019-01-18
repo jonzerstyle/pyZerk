@@ -25,6 +25,10 @@ Hack the screen size...
 globals.py
 SCREENSIZE = (1024, 768)
 
+Hack the number of OTTOs...
+main.py
+MAX_OTTOS = 2
+
 Hack the gun fire heat... Others....  Change the BMUSIC.ogg to your music...  Use Audacity to converter from mp3 to ogg.
 
 Crazy stuff can happen have fun ;)
