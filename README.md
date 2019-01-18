@@ -5,7 +5,7 @@ Three week project where I attempted to learn python and make my first working g
 youtube video of some gameplay:
 https://www.youtube.com/watch?v=7LbB4dXbi1Q&t=2s
 
-Recently I found this project on github which is much better and polished clone of berzerk: 
+Recently I found this project on github which is much better and polished clone of berserk: 
 
 https://github.com/flyingthing/PyBerzerk
 
