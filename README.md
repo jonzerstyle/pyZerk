@@ -15,6 +15,20 @@ with object collections and basics of a pygame that I leveraged:
 
 https://sourceforge.net/projects/asteroidsinf/
 
+To new people I would highly encourage hacking the game variables to see what happens:
+
+Hack the number of robots...
+globals.py
+NUM_OF_ROBOTS = 24
+
+Hack the screen size...
+globals.py
+SCREENSIZE = (1024, 768)
+
+Hack the gun fire heat... Others....  Change the BMUSIC.ogg to your music...  Use Audacity to converter from mp3 to ogg.
+
+Crazy stuff can happen have fun ;)
+
 ----------
 
 **REQUIREMENTS:**
