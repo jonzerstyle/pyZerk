@@ -9,6 +9,10 @@ Recently I found this project on github which is much better and polished clone 
 
 https://github.com/flyingthing/PyBerzerk
 
+I would also like to leave credit to an example pygame project which helped immensely dealing 
+with object collections and basics of a pygame that I leveraged:
+https://sourceforge.net/projects/asteroidsinf/
+
 ----------
 
 **REQUIREMENTS:**
