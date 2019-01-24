@@ -4,7 +4,7 @@ Three week project where I attempted to learn python and make my first working g
 
 youtube video of some gameplay:
 
-https://www.youtube.com/watch?v=7LbB4dXbi1Q&t=2s
+[![berserk like game (python implementation from scratch) uses pygame lib]](https://img.youtube.com/vi/7LbB4dXbi1Q&t=2s/0.jpg)(https://www.youtube.com/watch?v=7LbB4dXbi1Q&t=2s "berserk like game (python implementation from scratch) uses pygame lib" )
 
 Recently I found this project on github which is much better and polished clone of berserk: 
 
