@@ -10,7 +10,7 @@ youtube video of some gameplay:
 <!-- view youtube webpage source of video search for thumbnail to eventually find video ID -->
 <!-- [![Everything Is AWESOME](https://img.youtube.com/vi/StTqXEQ2l-Y/0.jpg)](https://www.youtube.com/watch?v=StTqXEQ2l-Y "Everything Is AWESOME") -->
 
-Recently I found this project on github which is much better and polished clone of berserk: 
+Recently I found this project on github which is a better clone of berserk: 
 
 https://github.com/flyingthing/PyBerzerk
 
