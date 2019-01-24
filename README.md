@@ -35,6 +35,8 @@ MAX_OTTOS = 2
 
 Hack the gun fire heat... Others....  Change the BMUSIC.ogg to your music...  Use Audacity to converter from mp3 to ogg.
 
+Notice that most robots die because they run directly away from bullets when they are lined up with the bullet trajectory.  Try changing the robot.py code to be smarter about this scenario...  You might invent skynet?  Robots that you can't hit?
+
 Crazy stuff can happen have fun ;)
 
 ----------
