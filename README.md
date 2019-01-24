@@ -6,8 +6,9 @@ youtube video of some gameplay:
 
 [![berserk like game](https://img.youtube.com/vi/7LbB4dXbi1Q/0.jpg)](https://www.youtube.com/watch?v=7LbB4dXbi1Q "berserk like game uses pygame lib")
 
-`example on how to embed youtube video thumbnail
-`[![Everything Is AWESOME](https://img.youtube.com/vi/StTqXEQ2l-Y/0.jpg)](https://www.youtube.com/watch?v=StTqXEQ2l-Y "Everything Is AWESOME")
+<!-- example on how to embed youtube video thumbnail -->
+<!-- view youtube webpage source of video search for thumbnail to eventually find video ID -->
+<!-- [![Everything Is AWESOME](https://img.youtube.com/vi/StTqXEQ2l-Y/0.jpg)](https://www.youtube.com/watch?v=StTqXEQ2l-Y "Everything Is AWESOME") -->
 
 Recently I found this project on github which is much better and polished clone of berserk: 
 
