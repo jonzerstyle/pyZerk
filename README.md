@@ -79,3 +79,7 @@ the robots the players the bullets are all code created versus blipped in bitmap
 A friend got it running on android just for heck of it (you may notice some artifacts of this in the files) ... its not a good game for a phone but it ran pretty good on a cell phone throughput wise...
 
 Audacity is a great free converter for audio.  I used it to convert a thrown together song I made using Reason in wav to ogg format.
+
+**END NOTES:**
+
+I would not use python or any interpreted language for a important application.  One of the huge issues I found while working on this project is that syntax bugs are not found until the code executes that portion of the code.  Your edge case conditions that could be exposed during basic compilation with other languages will go unchecked with a python project.  They will only be found when the edge case occurs in real time.  There are tools to help with this, though ultimately python is not a language that should be used for beyond very small projects in my opinion.  
