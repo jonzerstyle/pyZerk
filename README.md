@@ -58,7 +58,7 @@ lives are unlimited
 as you die levels increase - basically robots move faster too a point and then
 game goes back to level zero 
 
-voices were created using a articifial voice program called eSpeak
+voices were created using a artificial voice program called eSpeak
 
 http://espeak.sourceforge.net/
 
