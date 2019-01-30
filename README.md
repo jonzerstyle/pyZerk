@@ -84,6 +84,8 @@ I used Reason 8.0 it's pretty easy to throw together music that doesn't sound ba
 
 [![Reason 8.0](https://img.youtube.com/vi/hl9MNgJAbXc/0.jpg)](https://www.youtube.com/watch?v=hl9MNgJAbXc "Reason 8.0")
 
+[![Blade Runnerish Tune](https://img.youtube.com/vi/neFVcz5PFRA/0.jpg)](https://www.youtube.com/watch?v=neFVcz5PFRA "Blade Runnerish Tune")
+
 ----------
 
 **END NOTES:**
