@@ -60,6 +60,8 @@ game goes back to level zero
 
 voices were created using a articifial voice program called eSpeak
 
+http://espeak.sourceforge.net/
+
 when you run into a wall or robot - that was me going aghahgahghagh - hahah
 
 Blasting effects were created using SoX - I didn't do anything crazy just used a sine wave or something with varying parameters.  If you have ever put a waveform generator through a speaker you will know what I mean.  It's easy to make simple synth retro type sounds with just a square wave of triangle waveform where you can quickly ramp the frequency.  Sox can generate these waveforms for you.  I used Sox output when I was working on a audio compressor decompressor at work to see how well the compressor handled audio at different frequencies by sweeping the frequency.  I found a null at certain frequencies that are in the voice range that was interesting but not a show stopper apparently unless someone used that tone a great deal while speaking.  I would feed the audio file into the compression algorithm on a computer to evaluate compression and decompression without using actual audio hardware.  Just an example how a simple tool can be used in more things than video games.  How you can learn a great deal by making a game that can apply to engineering jobs and others.
