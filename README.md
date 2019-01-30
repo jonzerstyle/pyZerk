@@ -1,4 +1,4 @@
-**PyZerk**
+**pyZerk**
 ===================
 Three week project where I attempted to learn python and make my first working game.  Aiming to create a Berserk like game.  
 
