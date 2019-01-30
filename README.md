@@ -49,7 +49,7 @@ https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi
 then install this and point at previous local installation location
 http://pygame.org/ftp/pygame-1.9.2a0.win32-py2.7.msi
 
-then execute run.bat from folder and have fun
+then execute run.bat from command terminal
 
 left cntrl is fire - hold and use arrows to stand ground and shoot 
 otherwise run with cursor
