@@ -80,6 +80,9 @@ A friend got it running on android just for heck of it (you may notice some arti
 
 Audacity is a great free converter for audio.  I used it to convert a thrown together song I made using Reason in wav to ogg format.
 
+I used Reason 8.0 it's pretty easy to throw together music that doesn't sound bad with it.  Also, includes many sophisticated tools that I have yet to learn like the vocoder!
+[![Reason 8.0](https://img.youtube.com/vi/hl9MNgJAbXc/0.jpg)](https://www.youtube.com/watch?v=hl9MNgJAbXc "Reason 8.0")
+
 ----------
 
 **END NOTES:**
