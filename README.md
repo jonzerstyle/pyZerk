@@ -62,7 +62,9 @@ voices were created using a articifial voice program called eSpeak
 
 when you run into a wall or robot - that was me going aghahgahghagh - hahah
 
-blasting effects were created using SoX
+Blasting effects were created using SoX - I didn't do anything crazy just used a sine wave or something with varying parameters.  If you have ever put a waveform generator through a speaker you will know what I mean.  It's easy to make simple synth retro type sounds with just a square wave of triangle waveform where you can quickly ramp the frequency.  Sox can generate these waveforms for you.  I used Sox output when I was working on a audio compressor decompressor at work to see how well the compressor handled audio at different frequencies by sweeping the frequency.  I found a null at certain frequencies that are in the voice range that was interesting but not a show stopper apparently unless someone used that tone a great deal while speaking.  I would feed the audio file into the compression algorithm on a computer to evaluate compression and decompression without using actual audio hardware.  Just an example how a simple tool can be used in more things than video games.  How you can learn a great deal by making a game that can apply to engineering jobs and others.
+
+http://sox.sourceforge.net/
 
 fun game to make - not complete - but learned python and a game in 3 weeks not bad 
 
@@ -70,6 +72,8 @@ if you browse src code you will see the basic vector math etc...
 
 pygame did the collision detection work - and the low level graphics and sound the rest was done
 in python by me
+
+https://www.pygame.org/news
 
 Objects were created on the fly using hardcoded vector points
 not blipped - less efficient maybe but more old skool hardcore...  I punched in manual
@@ -79,6 +83,8 @@ the robots the players the bullets are all code created versus blipped in bitmap
 A friend got it running on android just for heck of it (you may notice some artifacts of this in the files) ... its not a good game for a phone but it ran pretty good on a cell phone throughput wise...
 
 Audacity is a great free converter for audio.  I used it to convert a thrown together song I made using Reason in wav to ogg format.
+
+https://www.audacityteam.org/
 
 I used Reason 8.0 it's pretty easy to throw together music that doesn't sound bad with it.  Also, includes many sophisticated tools that I have yet to learn like the vocoder!
 
