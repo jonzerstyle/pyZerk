@@ -98,6 +98,3 @@ Youtube video of in game music played within Reason
 
 ----------
 
-**END NOTES:**
-
-I would not use python or any interpreted language for a important application.  One of the huge issues I found while working on this project is that syntax bugs are not found until the code executes that portion of the code.  Your edge case conditions that could be exposed during basic compilation with other languages will go unchecked with a python project.  They will only be found when the edge case occurs in real time.  There are tools to help with this, though ultimately python is not a language that should be used beyond very small projects in my opinion.  
