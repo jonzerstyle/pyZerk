@@ -46,8 +46,8 @@ class Class_PerfectMaze():
         self.xmax = copy.deepcopy(maze_x_max)
         self.ymax = copy.deepcopy(maze_y_max)
         cell_grid_rows = [] 
-        for i in xrange(0,self.xmax):
-            for y in xrange(0,self.ymax):
+        for i in range(0,self.xmax):
+            for y in range(0,self.ymax):
                 cell_grid_rows.append(Class_MCells()) 
 
         # to make the cells more C like create 
@@ -66,21 +66,21 @@ class Class_PerfectMaze():
         # in a particular direction
 
         # assign top neighbor
-        for x in xrange(1,self.xmax):
-            for y in xrange(0,self.ymax):
+        for x in range(1,self.xmax):
+            for y in range(0,self.ymax):
                 self.cells[x][y].neighbors[cellDirEnum.CUP] = self.cells[x - 1][y]
         # assign bottom neighbor
-        for x in xrange(0,self.xmax - 1):
-            for y in xrange(0,self.ymax):
+        for x in range(0,self.xmax - 1):
+            for y in range(0,self.ymax):
                 self.cells[x][y].neighbors[cellDirEnum.CDOWN] = self.cells[x + 1][y]
 
         # assign left neighbor
-        for x in xrange(0,self.xmax):
-            for y in xrange(1,self.ymax):
+        for x in range(0,self.xmax):
+            for y in range(1,self.ymax):
                 self.cells[x][y].neighbors[cellDirEnum.CLEFT] = self.cells[x][y - 1]
         # assign right neighbor
-        for x in xrange(0,self.xmax):
-            for y in xrange(0,self.ymax - 1):
+        for x in range(0,self.xmax):
+            for y in range(0,self.ymax - 1):
                 self.cells[x][y].neighbors[cellDirEnum.CRIGHT] = self.cells[x][y + 1]
 
         totalCells = self.xmax * self.ymax
@@ -93,7 +93,7 @@ class Class_PerfectMaze():
             good_neighbors_list = []
             good_neighbors_dir_list = []
 
-            for i in xrange(0, len(currentCell.neighbors)):
+            for i in range(0, len(currentCell.neighbors)):
                 # not a null neighbor - i.e. border area
                 if currentCell.neighbors[i] != None:
                     if (currentCell.neighbors[i].walls == [True, True, True, True]):
@@ -113,7 +113,7 @@ class Class_PerfectMaze():
                 #for both cells
                 currentCell.walls[work_on_neighbor_dir] = False
                 #find currentCell index in neighbor we are working on
-                for i in xrange(0, len(work_on_neighbor.neighbors)):
+                for i in range(0, len(work_on_neighbor.neighbors)):
                     if (work_on_neighbor.neighbors[i] != None):
                         if (work_on_neighbor.neighbors[i] == currentCell):
                             # we found index
@@ -160,9 +160,9 @@ class Class_Maze():
 
         # iterate throw each cell from left to right
         # and draw walls if they exist
-        for x in xrange(0,len(cells)):
-            for y in xrange(0,len(cells[0])):
-                for z in xrange(0,len(cells[x][y].walls)):
+        for x in range(0,len(cells)):
+            for y in range(0,len(cells[0])):
+                for z in range(0,len(cells[x][y].walls)):
                     if (cells[x][y].walls[z] == True):
                         drawTL = [y * xsize, x * ysize]
                         #draw wall
@@ -188,9 +188,9 @@ class Class_Maze():
 if __name__ == '__main__':
     x = Class_MCells()
     maze = Class_PerfectMaze(2,2,[])
-    for x in xrange(0,len(maze.cells)):
+    for x in range(0,len(maze.cells)):
         row = maze.cells[x]
-        for y in xrange(0,len(row)):
+        for y in range(0,len(row)):
             row[y].walls
             assert (row[y].walls != [True, True, True, True]),"all walls true!"
             assert (row[y].walls != [False, False, False, False]),"all walls false!"

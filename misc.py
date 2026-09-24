@@ -1,5 +1,14 @@
 import pygame
 import math
+import os
+import sys
+
+def get_asset_path(rel_path):
+    base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    full_path = os.path.join(base_dir, rel_path)
+    if os.path.exists(full_path):
+        return full_path
+    return rel_path
 
 def hang():
     #wait for a keypress
@@ -18,6 +27,8 @@ def wrap(num, start, end):
 # xslots is number of slots to place on x axis
 # yslots is number of slots to place on y axis
 def distPoints(pixelMax, xslots, yslots):
+    xslots = int(xslots)
+    yslots = int(yslots)
     assert ((xslots > 0) & (yslots > 0)), "slots have to be > 0"
     retList = []
     # distribute x pts - add 2 to total so that we
@@ -25,10 +36,10 @@ def distPoints(pixelMax, xslots, yslots):
     xslots += 1
     yslots += 1
     placementx = 0.0
-    for i in xrange(0, xslots):
+    for i in range(0, xslots):
         placementx += pixelMax[0] / xslots
         placementy = 0.0
-        for j in xrange(0, yslots):
+        for j in range(0, yslots):
             placementy += pixelMax[1] / yslots
             if ((i != (xslots - 1)) & (j != (yslots - 1))): 
                 retList.append([int(placementx), int(placementy)])
@@ -71,4 +82,4 @@ def rotate(angle, list_polygon_pts):
 # x = enum('A','B','C')
 # x.A == 0 and so on
 def enum(*args, **kwargs):
-    return type('Enum', (), dict((y, x) for x, y in enumerate(args), **kwargs))
+    return type('Enum', (), dict([(y, x) for x, y in enumerate(args)], **kwargs))

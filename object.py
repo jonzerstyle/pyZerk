@@ -22,8 +22,9 @@ class Class_Obj(pygame.sprite.Sprite):
             self.kill()
         self.pos[0] = misc.wrap(self.pos[0], 0, globals.SCREENSIZE[0])
         self.pos[1] = misc.wrap(self.pos[1], 0, globals.SCREENSIZE[1])
-        self.pos[0] += self.speed[0] / globals.FPS
-        self.pos[1] += self.speed[1] / globals.FPS
+        if globals.FPS > 0:
+            self.pos[0] += self.speed[0] / globals.FPS
+            self.pos[1] += self.speed[1] / globals.FPS
         # pts are defined in % from top left corner - in % of xsize and ysize of
         # a rectangle.
         # here in order to draw we need to find the screen position of the top 

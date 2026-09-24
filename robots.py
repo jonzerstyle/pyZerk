@@ -199,7 +199,7 @@ class Class_Robot(object.Class_Obj):
 
         #build a list of hitLists that are zero
         pickDir = []
-        for i in xrange(0, len(hitList)):
+        for i in range(0, len(hitList)):
             if (hitList[i] == False):
                 pickDir.append(i)
 
@@ -213,7 +213,7 @@ class Class_Robot(object.Class_Obj):
             # check to see if we can move away from objects
             # near us - if not then leave direction
             # at same as last
-            for i in xrange(0, len(hitList)):
+            for i in range(0, len(hitList)):
                 if (hitList[i] == True):
                     # is opposite direction blocked?
                     if (hitList[movement.number_to_opposite_direction[i]] \

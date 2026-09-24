@@ -14,6 +14,12 @@ SCREENSIZE = (800, 480)
 SCREEN_BACKCOLOR = (0, 0, 0)
 SOUNDS_ON = True
 
+# pre-initialize audio mixer with 44.1kHz, 16-bit stereo, and 4096 buffer for smooth WebAudio
+try:
+    pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=4096)
+except Exception:
+    pass
+
 # must call pygame.init before doing try: on pygame stuff or Memory Error results
 pygame.init()
 
@@ -27,8 +33,8 @@ COLLIDABLE = pygame.sprite.Group()
 WALLS = pygame.sprite.Group()
 TEXT = pygame.sprite.Group()
 
-FPS = 0
 FRAME_RATE_SETTING = 30
+FPS = FRAME_RATE_SETTING
 BASE_OBJECT_SPEED = SCREENSIZE[0] / 10.0
 ROBOT_OBJECT_SPEED = BASE_OBJECT_SPEED
 PLAYER_OBJECT_SPEED = BASE_OBJECT_SPEED * 1.25
