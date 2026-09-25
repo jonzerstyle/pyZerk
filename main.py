@@ -54,7 +54,7 @@ try:
 except Exception:
     pass
 
-maxLevels = 50
+maxLevels = globals.MAX_LEVELS
 MAX_OTTOS = 1
 
 def setupRoom(level_num):
@@ -74,22 +74,27 @@ def setupRoom(level_num):
     maze.Class_Maze(globals.SCREENSIZE)
 
 def startNewLevel():
-    """Advance to the next level and setup the room."""
+    """Advance to the next level and setup the room, looping cleanly to Level 1 when max level is surpassed."""
     sounds.playSound(sounds.nextLevelSound)
     globals.LEVEL += 1
-    # make level wrap back to zero
-    if globals.LEVEL > maxLevels:
-        globals.LEVEL = 0
+    did_loop = False
+    # When max level is reached and surpassed, loop cleanly back to Level 1
+    if globals.LEVEL > globals.MAX_LEVELS:
+        globals.LEVEL = 1
+        globals.LEVEL_LOOP += 1
+        did_loop = True
     setupRoom(globals.LEVEL)
+    return did_loop
 
 def respawnCurrentLevel():
     """Respawn the player and reset the room for the current level without advancing."""
     setupRoom(globals.LEVEL)
 
 def startNewGame():
-    """Start a fresh new game from Level 1, resetting score, lives, and level."""
+    """Start a fresh new game from Level 1, resetting score, lives, level, and loop counter."""
     globals.SCORE = 0
     globals.LEVEL = 0
+    globals.LEVEL_LOOP = 0
     globals.LIVES = globals.INITIAL_LIVES
     globals.LEVELS_PASSED = 0
     for a in globals.OBJECTS:
@@ -185,6 +190,7 @@ async def main():
     respawn_timer = 0
     game_over_timer = 0
     bonus_life_timer = 0
+    loop_banner_timer = 0
 
     #main loop
     while keybo.running == True:
@@ -206,6 +212,7 @@ async def main():
                     respawn_timer = 0
                     game_over_timer = 0
                     bonus_life_timer = 0
+                    loop_banner_timer = 0
                     startNewGame()
                     break
                 elif action == "QUIT":
@@ -225,6 +232,7 @@ async def main():
             respawn_timer = 0
             game_over_timer = 0
             bonus_life_timer = 0
+            loop_banner_timer = 0
             returnToMenu()
             continue
 
@@ -260,6 +268,8 @@ async def main():
 
             if bonus_life_timer > 0:
                 bonus_life_timer -= 1
+            if loop_banner_timer > 0:
+                loop_banner_timer -= 1
 
             # Check to see if player died or all robots destroyed
             if len(globals.PLAYER.sprites()) == 0:
@@ -278,7 +288,9 @@ async def main():
                 if globals.LEVELS_PASSED % 10 == 0:
                     globals.LIVES += 1
                     bonus_life_timer = 60  # ~2 seconds banner
-                startNewLevel()
+                did_loop = startNewLevel()
+                if did_loop:
+                    loop_banner_timer = 90  # ~3 seconds milestone banner for looping game
 
         # Blank the screen
         screen.fill(globals.SCREEN_BACKCOLOR)
@@ -291,15 +303,28 @@ async def main():
         score_surf = hud_font.render(f"SCORE: {globals.SCORE}", True, globals.WHITE)
         lives_color = (0, 255, 100) if globals.LIVES > 1 else (255, 60, 60)
         lives_surf = hud_font.render(f"LIVES: {globals.LIVES}", True, lives_color)
-        level_surf = hud_font.render(f"LEVEL: {globals.LEVEL}", True, globals.CYAN)
+        if globals.LEVEL_LOOP > 0:
+            level_text = f"LEVEL: {globals.LEVEL} [LOOP {globals.LEVEL_LOOP + 1}]"
+        else:
+            level_text = f"LEVEL: {globals.LEVEL}"
+        level_surf = hud_font.render(level_text, True, globals.CYAN)
         menu_hint_surf = hud_font.render("[ENTER: MENU]", True, globals.YELLOW)
         dirtyrects.append(screen.blit(score_surf, (15, 8)))
-        dirtyrects.append(screen.blit(lives_surf, (200, 8)))
-        dirtyrects.append(screen.blit(level_surf, (370, 8)))
+        dirtyrects.append(screen.blit(lives_surf, (190, 8)))
+        dirtyrects.append(screen.blit(level_surf, (340, 8)))
         dirtyrects.append(screen.blit(menu_hint_surf, (655, 8)))
 
+        # Draw loop-around milestone banner when max level is surpassed
+        if loop_banner_timer > 0 and game_over_timer == 0 and respawn_timer == 0:
+            loop_msg = f"★ MAX LEVEL SURPASSED! ENTERING LOOP {globals.LEVEL_LOOP + 1}! ★"
+            loop_surf = banner_font.render(loop_msg, True, (0, 255, 255))
+            lx = (globals.SCREENSIZE[0] - loop_surf.get_width()) // 2
+            bg_rect = pygame.Rect(lx - 12, 34, loop_surf.get_width() + 24, loop_surf.get_height() + 6)
+            pygame.draw.rect(screen, (10, 20, 30), bg_rect)
+            pygame.draw.rect(screen, (0, 220, 255), bg_rect, 1)
+            dirtyrects.append(screen.blit(loop_surf, (lx, 37)))
         # Draw 10-level bonus life celebration banner
-        if bonus_life_timer > 0 and game_over_timer == 0 and respawn_timer == 0:
+        elif bonus_life_timer > 0 and game_over_timer == 0 and respawn_timer == 0:
             bonus_surf = banner_font.render("★ 10 LEVELS PASSED! +1 EXTRA LIFE! ★", True, (255, 230, 0))
             bx = (globals.SCREENSIZE[0] - bonus_surf.get_width()) // 2
             bg_rect = pygame.Rect(bx - 12, 34, bonus_surf.get_width() + 24, bonus_surf.get_height() + 6)

@@ -101,13 +101,68 @@ def run_tests():
     # Render onto test surface and save screenshot
     screen.fill((0, 0, 0))
     screen.blit(score_surf, (15, 8))
-    screen.blit(lives_surf, (200, 8))
-    screen.blit(level_surf, (370, 8))
+    screen.blit(lives_surf, (190, 8))
+    screen.blit(level_surf, (340, 8))
     screen.blit(hud_font.render("[ENTER: MENU]", True, globals.YELLOW), (655, 8))
     pygame.image.save(screen, os.path.join(os.path.dirname(__file__), "test_hud_render.png"))
     print("[PASS] HUD top status bar with LIVES rendered and saved to test_hud_render.png.")
 
-    print("\nALL 5 TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
+    # 6. Test Max Level Loop Around (Surpassing Level 50)
+    print("\n--- Testing Level Loop Around when Max Level (50) is reached and surpassed ---")
+    main.startNewGame()
+    globals.LIVES = 3
+    globals.LEVELS_PASSED = 48
+    globals.LEVEL = 49  # Simulate on level 49
+
+    # Clear level 49 -> Enter level 50 (MAX_LEVELS)
+    globals.LEVELS_PASSED += 1
+    did_loop = main.startNewLevel()
+    assert did_loop is False, "Not looped yet at level 50"
+    assert globals.LEVEL == 50, f"Expected LEVEL == 50, got {globals.LEVEL}"
+    assert globals.LEVEL_LOOP == 0, f"Expected LEVEL_LOOP == 0, got {globals.LEVEL_LOOP}"
+    print(f"  -> At Level 50 (Max Level): LEVEL={globals.LEVEL}, LOOP={globals.LEVEL_LOOP + 1}")
+
+    # Clear level 50 -> Surpass max level (50) and loop around!
+    globals.LEVELS_PASSED += 1  # 50 levels passed!
+    if globals.LEVELS_PASSED % 10 == 0:
+        globals.LIVES += 1
+    did_loop = main.startNewLevel()
+
+    assert did_loop is True, "Expected did_loop to be True when surpassing MAX_LEVELS"
+    assert globals.LEVEL == 1, f"Expected LEVEL to wrap back to 1 (not 0), got {globals.LEVEL}"
+    assert globals.LEVEL_LOOP == 1, f"Expected LEVEL_LOOP == 1 (Loop 2), got {globals.LEVEL_LOOP}"
+    assert globals.LEVELS_PASSED == 50, f"Expected LEVELS_PASSED == 50, got {globals.LEVELS_PASSED}"
+    assert globals.LIVES == 4, f"Expected bonus life for passing 50 levels (3 -> 4), got {globals.LIVES}"
+    print(f"  -> Surpassed Level 50! Clean loop around: LEVEL={globals.LEVEL}, LOOP={globals.LEVEL_LOOP + 1}, LIVES={globals.LIVES}")
+
+    # Play 10 more levels in Loop 2 (Levels 1 through 10 of Loop 2)
+    for _ in range(10):
+        globals.LEVELS_PASSED += 1
+        if globals.LEVELS_PASSED % 10 == 0:
+            globals.LIVES += 1
+        main.startNewLevel()
+
+    assert globals.LEVEL == 11, f"Expected LEVEL == 11 in Loop 2, got {globals.LEVEL}"
+    assert globals.LEVEL_LOOP == 1, f"Expected LEVEL_LOOP == 1, got {globals.LEVEL_LOOP}"
+    assert globals.LEVELS_PASSED == 60, f"Expected LEVELS_PASSED == 60, got {globals.LEVELS_PASSED}"
+    assert globals.LIVES == 5, f"Expected another bonus life at 60 levels passed (4 -> 5), got {globals.LIVES}"
+    print(f"  -> Reached 60 levels passed in Loop 2: +1 bonus life awarded! LIVES={globals.LIVES}")
+
+    # Verify loop HUD string
+    loop_hud_text = f"LEVEL: {globals.LEVEL} [LOOP {globals.LEVEL_LOOP + 1}]"
+    assert loop_hud_text == "LEVEL: 11 [LOOP 2]", f"Unexpected HUD text: {loop_hud_text}"
+    hud_loop_surf = hud_font.render(loop_hud_text, True, globals.CYAN)
+    assert hud_loop_surf.get_width() > 0, "Loop HUD rendered"
+    print(f"  -> Loop HUD verified: '{loop_hud_text}'")
+
+    # Verify startNewGame resets loop counter
+    main.startNewGame()
+    assert globals.LEVEL_LOOP == 0, f"Expected LEVEL_LOOP == 0 on new game, got {globals.LEVEL_LOOP}"
+    assert globals.LEVEL == 1, f"Expected LEVEL == 1 on new game, got {globals.LEVEL}"
+    assert globals.LIVES == 3, f"Expected LIVES == 3 on new game, got {globals.LIVES}"
+    print("  -> startNewGame cleanly resets LEVEL_LOOP to 0, LEVEL to 1, LIVES to 3.")
+
+    print("\nALL 6 TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
 
 if __name__ == "__main__":
     run_tests()

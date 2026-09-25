@@ -112,7 +112,7 @@ This document tracks all features, architectural changes, audio updates, and dep
    - Full JSONL execution transcript: `~/.gemini/antigravity-cli/brain/<conversation-id>/.system_generated/logs/transcript.jsonl`
 
 
-### 7. Player Lives System, 10-Level Bonus Awards & HUD Status Bar
+### 7. Player Lives System, 10-Level Bonus Awards, Level Loop Around & HUD Status Bar
 * **Player Lives Management**:
   * Added `INITIAL_LIVES = 3`, `LIVES = INITIAL_LIVES`, and `LEVELS_PASSED = 0` in `globals.py`.
   * Initialized upon fresh game start in `main.py:startNewGame()`.
@@ -124,11 +124,26 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **10-Level Passing Bonus Award**:
   * Tracked monotonic level clears via `globals.LEVELS_PASSED`.
   * When `globals.LEVELS_PASSED % 10 == 0`, awards `globals.LIVES += 1` and triggers an on-screen celebratory banner: `★ 10 LEVELS PASSED! +1 EXTRA LIFE! ★`.
+* **Level Loop Around (Max Level Surpassed)**:
+  * Defined `MAX_LEVELS = 50` and `LEVEL_LOOP = 0` in `globals.py`.
+  * When level 50 is cleared and surpassed in `startNewLevel()`:
+    * `globals.LEVEL` cleanly wraps back to **Level 1** (fixing the legacy bug where it set `LEVEL = 0`).
+    * `globals.LEVEL_LOOP` increments (+1 loop cycle).
+    * `globals.LEVELS_PASSED` continues monotonically across all loops (50, 51, 60...), guaranteeing seamless bonus life awards across loops.
+    * Activates celebratory milestone banner: `★ MAX LEVEL SURPASSED! ENTERING LOOP X! ★`.
+  * Top bar status HUD dynamically displays `LEVEL: X [LOOP Y]` during subsequent loops.
+  * `startNewGame()` resets `LEVEL_LOOP` back to 0.
 * **HUD Status Top Bar**:
-  * Updated in-game top bar with `SCORE: X` (white, x=15), `LIVES: X` (green if >1, warning red if 1, x=200), `LEVEL: X` (cyan, x=370), and `[ENTER: MENU]` (yellow, x=655).
+  * Updated in-game top bar with `SCORE: X` (white, x=15), `LIVES: X` (green if >1, warning red if 1, x=190), `LEVEL: X [LOOP Y]` (cyan, x=340), and `[ENTER: MENU]` (yellow, x=655).
   * Added lives explanation to Start Menu key controls panel in `menu.py`.
 * **Automated Verification**:
-  * Created `scratch/test_lives_system.py` verifying 3 initial lives, death decrements, respawn without level loss, Game Over trigger at 0 lives, +1 life at level 10 and 20 passed, and HUD rendering. (100% PASS).
+  * Created `scratch/test_lives_system.py` verifying:
+    1. Initial 3 lives, score 0, level 1.
+    2. Death decrements and room preservation on respawn.
+    3. Game Over trigger at 0 lives.
+    4. +1 life at level 10 and 20 passed.
+    5. Top bar status HUD rendering.
+    6. Surpassing Level 50 cleanly loops to Level 1, increments loop counter, awards 50-level and 60-level bonus lives, renders Loop HUD, and resets cleanly on new game. (100% PASS).
 * **WebAssembly Bundle**:
   * Rebuilt via Pygbag and synced `pyzerk.apk` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 
@@ -141,7 +156,8 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Lives System & Status Bar**:
   * 3 starting lives, respawn pause on death preserving room progress, and Game Over sequence when out of lives.
   * +1 extra life awarded every 10 levels passed with celebratory on-screen banner.
-  * In-game top status bar displaying SCORE, LIVES (with color indicator), LEVEL, and MENU hint.
+  * Level loop around when surpassing max level (50) wrapping cleanly to Level 1 and tracking loop cycles with milestone celebration and HUD indicator.
+  * In-game top status bar displaying SCORE, LIVES (with color indicator), LEVEL / LOOP, and MENU hint.
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, and updated controls legend explaining the lives mechanic.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
