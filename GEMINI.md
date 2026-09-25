@@ -175,6 +175,7 @@ This document tracks all features, architectural changes, audio updates, and dep
   * Added non-electrified **GREEN energy exits** (`Class_ExitField`) along the perimeter of the maze.
   * Dimensions: Wall segment length is **exactly twice the width of the player character** ($2 \times 15 = 30$ pixels).
   * Random generation: Every level is guaranteed between **1 and 4 exits** covering cardinal boundaries (`UP`, `DOWN`, `LEFT`, `RIGHT`).
+  * **Entrance Wall Last Allocation Rule**: When generating green exits, the wall location closest to where the player entered on the level is **always allocated LAST** (only when 4 exits are generated, ensuring forward and lateral escape paths take priority).
   * Non-exit border segments remain standard **BLUE electrified walls** (lethal to touch).
   * Touching green exit safely initiates level transition without damaging the player (`globals.PENDING_EXIT`).
 * **Player Spawn Positioning on Next Maze**:

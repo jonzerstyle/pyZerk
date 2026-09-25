@@ -135,18 +135,30 @@ import player
 
 # class to create a maze of wall objects with escape route exits
 class Class_Maze():
-    def __init__(self, screensize, exit_dirs=None, wall_color=None, instantiate=True):
+    def __init__(self, screensize, exit_dirs=None, wall_color=None, instantiate=True, entry_wall=None):
         mazex = 3
         mazey = 3
         self.screensize = screensize
         self.wallThickness = walls.wall_pixel_size[0]
         self.pmaze = Class_PerfectMaze(mazex, mazey, [])
         self.wall_color = wall_color
+        self.entry_wall = entry_wall
 
         # Guarantee at least 1 exit, randomly up to 4 exits covering UP, DOWN, LEFT, RIGHT
+        # Rule: The wall location closest to where the player entered is allocated LAST.
         if exit_dirs is None:
+            all_walls = ['UP', 'DOWN', 'LEFT', 'RIGHT']
+            if entry_wall in all_walls:
+                other_walls = [w for w in all_walls if w != entry_wall]
+                random.shuffle(other_walls)
+                # Allocation order: other 3 walls first, entry_wall is the LAST allocation (4th)
+                ordered_candidates = other_walls + [entry_wall]
+            else:
+                ordered_candidates = all_walls[:]
+                random.shuffle(ordered_candidates)
+
             num_exits = random.randint(1, 4)
-            self.exit_dirs = random.sample(['UP', 'DOWN', 'LEFT', 'RIGHT'], num_exits)
+            self.exit_dirs = ordered_candidates[:num_exits]
         else:
             self.exit_dirs = list(exit_dirs)
 

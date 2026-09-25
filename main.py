@@ -60,6 +60,20 @@ MAX_OTTOS = 1
 
 current_maze = None
 
+OPPOSITE_WALL = {
+    'UP': 'DOWN',
+    'DOWN': 'UP',
+    'LEFT': 'RIGHT',
+    'RIGHT': 'LEFT'
+}
+
+def get_closest_wall_to_entry(entry_side):
+    """Determine the wall location closest to where the player entered the level."""
+    if entry_side in OPPOSITE_WALL:
+        return OPPOSITE_WALL[entry_side]
+    # For default/new game start pos ([80, 240]), the closest wall is LEFT
+    return 'LEFT'
+
 def setupRoom(level_num, entry_side=None, maze_instance=None):
     """Set up objects, player, robots, and maze for a level room."""
     global current_maze
@@ -111,7 +125,8 @@ def setupRoom(level_num, entry_side=None, maze_instance=None):
         current_maze = maze_instance
         current_maze.instantiateObjects()
     else:
-        current_maze = maze.Class_Maze(globals.SCREENSIZE)
+        entry_wall = get_closest_wall_to_entry(entry_side)
+        current_maze = maze.Class_Maze(globals.SCREENSIZE, entry_wall=entry_wall)
 
 def startNewLevel(entry_side=None, maze_instance=None):
     """Advance to the next level and setup the room, looping cleanly to Level 1 when max level is surpassed."""
@@ -428,7 +443,9 @@ async def main():
                     loop_banner_timer = 90
 
                 # Pre-generate new maze with GREY walls for scroll transition
-                next_maze = maze.Class_Maze(globals.SCREENSIZE, instantiate=False)
+                # When allocating green exits, the last allocation is the wall location closest to where the player entered
+                new_entry_wall = get_closest_wall_to_entry(exit_dir)
+                next_maze = maze.Class_Maze(globals.SCREENSIZE, instantiate=False, entry_wall=new_entry_wall)
                 new_maze_grey_surf = pygame.Surface(globals.SCREENSIZE)
                 new_maze_grey_surf.fill(globals.SCREEN_BACKCOLOR)
                 next_maze.render_to_surface(new_maze_grey_surf, grey_mode=True)

@@ -29,6 +29,19 @@ def run_tests():
         assert len(m.exit_specs) == len(m.exit_dirs), "Number of exit specs must match exit_dirs"
     print("[PASS] 100 maze generation runs verified: 100% have 1 to 4 valid exits.")
 
+    # 1b. Test Entrance Wall Location Allocated Last
+    print("\n--- 1b. Testing Entrance Wall Allocated Last ---")
+    for test_entry in ['UP', 'DOWN', 'LEFT', 'RIGHT']:
+        for _ in range(50):
+            m = maze.Class_Maze(globals.SCREENSIZE, instantiate=False, entry_wall=test_entry)
+            if len(m.exit_dirs) < 4:
+                # When fewer than 4 exits are allocated, the entry wall is NEVER allocated
+                assert test_entry not in m.exit_dirs, f"Entry wall {test_entry} must NOT be allocated when exit count is {len(m.exit_dirs)}"
+            else:
+                # When all 4 exits are allocated, the entry wall is the LAST allocation
+                assert m.exit_dirs[-1] == test_entry, f"Entry wall {test_entry} must be the LAST allocation, got {m.exit_dirs}"
+    print("[PASS] Entrance wall last allocation rule verified across all 4 entry directions (200 test runs).")
+
     # 2. Test Green Wall Segment Dimensions (twice the width of the player character)
     print("\n--- 2. Testing Exit Dimensions (twice player character width) ---")
     player_w = player.player_pixel_size[0]  # 15.0
