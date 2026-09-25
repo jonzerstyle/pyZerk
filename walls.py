@@ -111,6 +111,20 @@ class Class_ExitField(object.Class_Obj):
         object.Class_Obj.__init__(self, pos, speed, groups + [globals.EXITS, globals.COLLIDABLE])
         self.update()
 
+    def update(self):
+        super().update()
+        # Generous doorway corridor hitbox so players entering or grazing the doorway
+        # safely trigger escape without dying on the adjacent electrified wall edges
+        buf = 4
+        if self.direction == 'UP':
+            self.rect = pygame.Rect(self.top_left_point[0] - buf, self.top_left_point[1], self.size[0] + 2 * buf, self.size[1] + buf)
+        elif self.direction == 'DOWN':
+            self.rect = pygame.Rect(self.top_left_point[0] - buf, self.top_left_point[1] - buf, self.size[0] + 2 * buf, self.size[1] + buf)
+        elif self.direction == 'LEFT':
+            self.rect = pygame.Rect(self.top_left_point[0], self.top_left_point[1] - buf, self.size[0] + buf, self.size[1] + 2 * buf)
+        elif self.direction == 'RIGHT':
+            self.rect = pygame.Rect(self.top_left_point[0] - buf, self.top_left_point[1] - buf, self.size[0] + buf, self.size[1] + 2 * buf)
+
     def collide(self, victim):
         # Exit fields are not destructible
         # If player touches, signal exit

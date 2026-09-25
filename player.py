@@ -1,3 +1,4 @@
+import pygame
 import globals
 import robots
 import object
@@ -193,8 +194,14 @@ class Class_Player(object.Class_Obj):
         object.Class_Obj.__init__(self, pos, speed, groups + [globals.PLAYER, globals.COLLIDABLE])
 
     def collide(self, victim):
-        # Green exit fields are not electrified - do not kill player!
+        # Green exit fields are safe escape routes - do not kill player!
         if victim in globals.EXITS.sprites():
+            return
+        # If an exit transition is pending or player touches any exit field,
+        # player is safely in the exit corridor and immune to border wall electrocution!
+        if globals.PENDING_EXIT is not None:
+            return
+        if pygame.sprite.spritecollideany(self, globals.EXITS):
             return
         if globals.SOUNDS_ON:
             sounds.playSound(sounds.playerDeathSound)

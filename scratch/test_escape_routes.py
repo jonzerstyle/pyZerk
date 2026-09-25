@@ -79,7 +79,9 @@ def run_tests():
     assert globals.PENDING_EXIT == 'UP', f"Expected PENDING_EXIT == 'UP', got {globals.PENDING_EXIT}"
     print("[PASS] Touching green exit field does NOT kill player and flags PENDING_EXIT correctly.")
 
-    # Simulate collision with blue electrified wall
+    # Simulate collision with blue electrified wall (away from exit)
+    exit_field.kill()
+    globals.PENDING_EXIT = None
     blue_wall = walls.Class_Wall([400, 240], [10, 10])
     test_player.collide(blue_wall)
     assert test_player.killState is True, "Player MUST die when touching blue electrified wall!"

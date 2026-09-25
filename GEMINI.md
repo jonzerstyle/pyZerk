@@ -213,11 +213,30 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Result**:
   * The web game canvas displays cleanly in full focus with no terminal windows, split screens, or debug log boxes.
 
+### 11. Exit & Entrance Collision Safety: Doorframe Grazing & Exit Corridor Immunity
+* **Bug Identified**:
+  * When a green exit appeared near the player's entrance location on the next maze (or when traversing any exit), attempting to go through the exit could result in instant death.
+  * Root Cause:
+    1. Player dimensions are $15 \times 24$ px, while the exit opening is 30 px. Moving along vertical walls (LEFT/RIGHT) left only a 3 px margin, and horizontal walls only 7.5 px. Any slight diagonal movement, key tapping, or lateral offset caused the player's bounding box to graze the adjacent lethal electrified blue wall.
+    2. In `player.py:Class_Player.collide(victim)`, touching a `Class_Wall` always killed the player, even if the player was simultaneously overlapping the green exit or escaping through it.
+* **Fixes Implemented**:
+  * **Exit Corridor Immunity (`player.py`)**:
+    * Updated `collide()` to verify `if globals.PENDING_EXIT is not None or pygame.sprite.spritecollideany(self, globals.EXITS): return`.
+    * When a player touches or is inside a green exit corridor, they are immune to border wall electrocution.
+  * **Generous Doorway Corridor Hitbox (`walls.py`, `walls-pygbag.py`)**:
+    * Overrode `Class_ExitField.update()` to expand its collision hitbox with a 4 px doorway corridor buffer along lateral edges and 4 px inward depth into the room.
+    * Allows players to approach or graze the doorway opening from any angle or offset without catching on the doorframe corners.
+  * **Automated Verification**:
+    * Created `scratch/test_exit_entrance_safety.py` verifying straight entry, lateral offsets (-12 to +12 px), simultaneous overlap immunity, and diagonal approaches across all 4 directions (100% PASS).
+  * **WASM Rebuild**:
+    * Rebuilt `pyzerk.apk` and synchronized to both `webdeploy/` and `gemini_integrated_website/pyzerk/`.
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Exit Corridor & Doorway Safety**: Complete immunity to wall electrocution while touching exits or during pending escape transitions; generous doorway hitbox buffer eliminates doorframe clipping deaths.
 * **Web UI Cleanup**: Debug terminal, xterm console, and status log overlay completely hidden and suppressed in both `webdeploy/` and `gemini_integrated_website/pyzerk/`.
 * **Escape Routes & Transitions**:
   * 1 to 4 perimeter green exits (30px wide, twice player character width) allowing safe room escape.
@@ -237,6 +256,7 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 * **All Test Suites Passing (100%)**:
+  * `scratch/test_exit_entrance_safety.py`: PASSED (100%)
   * `scratch/test_escape_routes.py`: PASSED (100%)
   * `scratch/test_escape_route_flow.py`: PASSED (100%)
   * `scratch/test_high_score.py`: PASSED (100%)
