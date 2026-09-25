@@ -81,7 +81,19 @@ This document tracks all features, architectural changes, audio updates, and dep
   * **Chunked Vorbis Encoding**: Encoded  (813 KB, OGG Vorbis) in safe 1-second chunks to ensure zero buffer overflow, plus fallback  (PCM 16-bit).
   * **Normalization**: Peak normalized to -1.0 dBFS (RMS ~0.061) for optimal dynamic range and smooth integration with the Start Menu volume slider.
 
-### 4. WebAssembly (Pygbag) & Website Deployment
+### 5. Direct Game Start Audio Fix (Channel 0 Isolation)
+* **Problem**: Starting a game directly from the Start Menu without first touching the Music Volume slider caused silence (no background music).
+* **Root Cause Analysis**:
+  * Pygame's `mixer.find_channel(False)` was returning Channel 0 (the reserved soundtrack channel) whenever Channel 0 was idle.
+  * On game boot, `welcomeSound` was played on Channel 0, making it busy when `start_game_music()` was first called.
+  * When starting a new game, `startNewLevel()` played `nextLevelSound` via `playSound()`, which seized idle Channel 0 right before `start_game_music()` ran.
+  * `start_game_music()` saw `chan.get_busy() == True` and skipped starting the music.
+* **Resolution in `sounds.py`**:
+  * **Channel Isolation**: Updated `playSound()` to strictly search and allocate from channels 1 through 15, ensuring Channel 0 (`SOUNDTRACK_CHAN`) is never hijacked by SFX.
+  * **Soundtrack Verification**: Updated `start_game_music()` and `set_music_volume()` to check `if not chan.get_busy() or chan.get_sound() != soundTrack0Sound:`, guaranteeing that the music channel stops any foreign sound and reliably starts looping `soundTrack0Sound`.
+  * **Automated Test**: Created `scratch/test_direct_start_music.py` to simulate boot, immediate game start without menu adjustment, and heavy SFX traffic. Verified 100% passing.
+
+### 6. WebAssembly (Pygbag) & Website Deployment
 * Packaged game assets into WASM bundles using `pygbag --build .`.
 * Synchronized `pyzerk.apk` and `pyzerk.tar.gz` into [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
 
@@ -105,18 +117,34 @@ This document tracks all features, architectural changes, audio updates, and dep
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
-* **Start Menu**: Fully implemented in `menu.py` and integrated into `main.py`.
-  * 1.0 Start Game
-  * 2.0 Music Volume Slider + sample output
-  * 3.0 SFX Volume Slider + sample output
-  * Press Enter during game to return to Start Menu
-  * Controls legend on-screen
-* **Audio Engine**: Reserved Channel 0 for background soundtrack in `sounds.py`.
-* **Soundtrack**: Sourced **Envisioning Science Fiction Starship Ambience** with randomized short bridge sounds (`trek-communicator`, `bridge_1`, `bridge_56`, `bridge_57`, `bridge_74`, `bridge_101`, `bridge_116`, `science-fiction-space-shu`, `space-trek-02`, `space-trek-03`).
-  * 64.0-second seamless equal-power loop (0.0 seam error).
-  * Deployed to `sounds/BMUSIC.ogg` (813 KB Vorbis) and `sounds/BMUSIC.wav`.
-  * Original backup saved at `sounds/BMUSIC_backup.ogg`.
-  * Candidate audio assets saved at `/home/mjones/agy/pyzerk_audio_scratch/`.
-* **WebAssembly (Pygbag)**: Rebuilt web bundle (`pyzerk.apk` / `pyzerk.tar.gz`) and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **Tests**: Automated test suites in `scratch/test_start_menu_features.py` and `scratch/test_interactive_flow.py` pass with 0 errors (100%).
+* **Start Menu System**: Fully implemented in `menu.py` and integrated into `main.py`.
+  * 1.0 Start Game (Enter key to play).
+  * 2.0 Music Volume Slider (live feedback & sample playback).
+  * 3.0 SFX Volume Slider (live feedback & sample playback).
+  * In-game Return to Menu via `ENTER` key.
+  * On-screen controls legend panel.
+* **Audio Engine & Channel Allocation**:
+  * Channel 0 exclusively reserved for background music in `sounds.py`.
+  * SFX strictly allocated to channels 1–15 via `playSound()`.
+  * Direct game start music verified and guaranteed without requiring prior volume adjustments.
+* **Star Trek Soundscape**:
+  * Backdrop: Clean, unwatermarked *Envisioning Science Fiction* ambient bed (zero 60 Hz hum, zero vocal watermarks).
+  * Layered FX: 8 verified clean bridge sound effects (`trek-communicator`, `science-fiction-space-shu`, `bridge_1`, `bridge_56`, `bridge_57`, `bridge_74`, `bridge_101`, `bridge_116`).
+  * 64.0-second seamless loop with exact 0.0 seam boundary error.
+  * Formats: `sounds/BMUSIC.ogg` (803 KB Vorbis OGG) and `sounds/BMUSIC.wav` (11.2 MB PCM 16-bit).
+  * Original arcade theme backed up as `sounds/BMUSIC_backup.ogg`.
+* **WebAssembly Deployment**:
+  * Rebuilt via Pygbag (`build/web/`).
+  * Synced `pyzerk.apk` and `pyzerk.tar.gz` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+* **Automated Tests**:
+  * `scratch/test_start_menu_features.py`: PASSED (100%)
+  * `scratch/test_interactive_flow.py`: PASSED (100%)
+  * `scratch/test_direct_start_music.py`: PASSED (100%)
+* **Git Status**:
+  * Branch: `agy_1`
+  * Clean commit state ready.
 
+### Next Actions Upon Reconnection
+1. Verify updated permission behavior with your new `~/.gemini/config/config.json`.
+2. Push branch `agy_1` to GitHub if desired (`git push origin agy_1`).
+3. Proceed with any additional pyZerk features or web enhancements.

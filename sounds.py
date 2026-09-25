@@ -100,7 +100,8 @@ def set_music_volume(volume):
             else:
                 chan.set_volume(1.0)
                 # If channel is not currently playing music, start it
-                if not chan.get_busy() and soundTrack0Sound is not None:
+                if (not chan.get_busy() or chan.get_sound() != soundTrack0Sound) and soundTrack0Sound is not None:
+                    chan.stop()
                     chan.play(soundTrack0Sound, -1)
     except Exception:
         pass
@@ -173,7 +174,8 @@ def start_game_music():
         if music_volume > 0.001:
             soundTrack0Sound.set_volume(MUSIC_BASE_VOLUME * music_volume)
             chan.set_volume(1.0)
-            if not chan.get_busy():
+            if not chan.get_busy() or chan.get_sound() != soundTrack0Sound:
+                chan.stop()
                 chan.play(soundTrack0Sound, -1)
     except Exception:
         pass
@@ -237,12 +239,22 @@ def init_mixer():
         globals.SOUNDS_ON = False
 
 def playSound(sound):
+    """Play a sound effect on an available SFX channel (channels 1-15, reserving channel 0 for music)."""
     if not globals.SOUNDS_ON or not mixer.get_init() or sound is None:
         return
-    # find_channel(False) looks for an unreserved idle channel (channels 1-15)
-    chan = mixer.find_channel(False)
-    if chan is not None:
-        chan.play(sound)
+    try:
+        num_chans = mixer.get_num_channels()
+        # Find idle SFX channel starting at index 1 to never hijack SOUNDTRACK_CHAN (0)
+        for i in range(1, num_chans):
+            chan = mixer.Channel(i)
+            if not chan.get_busy():
+                chan.play(sound)
+                return
+        # If all SFX channels busy, fallback to playing on channel 1 (stealing lowest priority SFX)
+        if num_chans > 1:
+            mixer.Channel(1).play(sound)
+    except Exception:
+        pass
 
 # Initialize mixer on import
 init_mixer()
