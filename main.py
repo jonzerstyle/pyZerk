@@ -39,6 +39,7 @@ import otto
 import walls
 import text
 import menu
+import highscore
 from cclass import Class_Container
 from keybo import Class_ProcessKeybo 
 from pygame.locals import *
@@ -92,6 +93,7 @@ def respawnCurrentLevel():
 
 def startNewGame():
     """Start a fresh new game from Level 1, resetting score, lives, level, and loop counter."""
+    highscore.load_high_score()
     globals.SCORE = 0
     globals.LEVEL = 0
     globals.LEVEL_LOOP = 0
@@ -187,6 +189,8 @@ async def main():
     go_font = pygame.font.Font(None, 54)
     banner_font = pygame.font.Font(None, 28)
 
+    highscore.load_high_score()
+    high_score_entry = None
     respawn_timer = 0
     game_over_timer = 0
     bonus_life_timer = 0
@@ -209,6 +213,7 @@ async def main():
             for event in events:
                 action = start_menu.handle_event(event)
                 if action == "START_GAME":
+                    high_score_entry = None
                     respawn_timer = 0
                     game_over_timer = 0
                     bonus_life_timer = 0
@@ -225,10 +230,33 @@ async def main():
             await asyncio.sleep(0)
             continue
 
+        # HIGH SCORE INITIALS ENTRY MODE
+        if high_score_entry and high_score_entry.active:
+            for event in events:
+                action = high_score_entry.handle_event(event)
+                if action == "CONFIRMED":
+                    high_score_entry = None
+                    game_over_timer = 90
+                    if globals.SOUNDS_ON:
+                        sounds.playSound(sounds.gameOverSound)
+                    break
+
+            if high_score_entry and high_score_entry.active:
+                screen.fill(globals.SCREEN_BACKCOLOR)
+                for a in globals.OBJECTS.sprites():
+                    a.draw(screen)
+                high_score_entry.draw(screen)
+                pygame.display.flip()
+                await asyncio.sleep(0)
+                continue
+
         # GAMEPLAY MODE
         # Keyboard processing
         keybo.run(globals.SCREENSIZE, screen, globals.SCREEN_BACKCOLOR, mainContainerC, events=events)
         if keybo.return_to_menu:
+            if highscore.is_high_score(globals.SCORE):
+                high_score_entry = highscore.Class_HighScoreEntry(globals.SCORE)
+                continue
             respawn_timer = 0
             game_over_timer = 0
             bonus_life_timer = 0
@@ -278,9 +306,12 @@ async def main():
                 if globals.LIVES > 0:
                     respawn_timer = 30  # ~1 second respawn delay
                 else:
-                    game_over_timer = 90  # ~3 seconds Game Over display
-                    if globals.SOUNDS_ON:
-                        sounds.playSound(sounds.gameOverSound)
+                    if highscore.is_high_score(globals.SCORE):
+                        high_score_entry = highscore.Class_HighScoreEntry(globals.SCORE)
+                    else:
+                        game_over_timer = 90  # ~3 seconds Game Over display
+                        if globals.SOUNDS_ON:
+                            sounds.playSound(sounds.gameOverSound)
             elif len(globals.ROBOTS.sprites()) == 0:
                 # Level cleared!
                 globals.LEVELS_PASSED += 1
@@ -304,15 +335,17 @@ async def main():
         lives_color = (0, 255, 100) if globals.LIVES > 1 else (255, 60, 60)
         lives_surf = hud_font.render(f"LIVES: {globals.LIVES}", True, lives_color)
         if globals.LEVEL_LOOP > 0:
-            level_text = f"LEVEL: {globals.LEVEL} [LOOP {globals.LEVEL_LOOP + 1}]"
+            level_text = f"LEVEL: {globals.LEVEL} [L{globals.LEVEL_LOOP + 1}]"
         else:
             level_text = f"LEVEL: {globals.LEVEL}"
         level_surf = hud_font.render(level_text, True, globals.CYAN)
+        hi_surf = hud_font.render(f"HI: {globals.HIGH_SCORE} ({globals.HIGH_SCORE_INITIALS})", True, (255, 215, 0))
         menu_hint_surf = hud_font.render("[ENTER: MENU]", True, globals.YELLOW)
         dirtyrects.append(screen.blit(score_surf, (15, 8)))
-        dirtyrects.append(screen.blit(lives_surf, (190, 8)))
-        dirtyrects.append(screen.blit(level_surf, (340, 8)))
-        dirtyrects.append(screen.blit(menu_hint_surf, (655, 8)))
+        dirtyrects.append(screen.blit(lives_surf, (155, 8)))
+        dirtyrects.append(screen.blit(level_surf, (270, 8)))
+        dirtyrects.append(screen.blit(hi_surf, (440, 8)))
+        dirtyrects.append(screen.blit(menu_hint_surf, (665, 8)))
 
         # Draw loop-around milestone banner when max level is surpassed
         if loop_banner_timer > 0 and game_over_timer == 0 and respawn_timer == 0:

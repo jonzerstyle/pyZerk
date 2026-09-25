@@ -203,16 +203,21 @@ class Class_StartMenu:
         title_str = "P  Y  Z  E  R  K"
         title_shadow = self.font_title.render(title_str, True, self.TITLE_SHADOW)
         title_surf = self.font_title.render(title_str, True, self.TITLE_COLOR)
-        title_rect = title_surf.get_rect(center=(sw // 2, 32))
+        title_rect = title_surf.get_rect(center=(sw // 2, 26))
         surface.blit(title_shadow, (title_rect.x + 2, title_rect.y + 2))
         surface.blit(title_surf, title_rect)
         
+        # High Score Marquee
+        hi_str = f"★ HIGH SCORE: {globals.HIGH_SCORE}  [{globals.HIGH_SCORE_INITIALS}] ★"
+        hi_surf = self.font_subtitle.render(hi_str, True, (255, 215, 0))
+        surface.blit(hi_surf, hi_surf.get_rect(center=(sw // 2, 52)))
+
         sub_str = "INTRUDER ALERT! DESTROY THE ROBOTS - ESCAPE THE MAZE"
-        sub_surf = self.font_subtitle.render(sub_str, True, self.SUBTITLE_COLOR)
-        surface.blit(sub_surf, sub_surf.get_rect(center=(sw // 2, 64)))
+        sub_surf = self.font_small.render(sub_str, True, self.SUBTITLE_COLOR)
+        surface.blit(sub_surf, sub_surf.get_rect(center=(sw // 2, 72)))
         
         # Decorative top divider line
-        pygame.draw.line(surface, (0, 100, 130), (40, 80), (sw - 40, 80), 1)
+        pygame.draw.line(surface, (0, 100, 130), (40, 85), (sw - 40, 85), 1)
         
         # 2. Menu Items
         self.item_rects = []

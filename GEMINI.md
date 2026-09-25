@@ -148,20 +148,43 @@ This document tracks all features, architectural changes, audio updates, and dep
   * Rebuilt via Pygbag and synced `pyzerk.apk` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 
 
+### 8. High Score Persistence & 3-Letter Initials Entry System
+* **Architecture & Storage (`highscore.py`, `highscore.json`)**:
+  * Implemented dedicated high score manager with JSON persistence (`highscore.json`).
+  * Default record: `100` points by `CPU`.
+  * Safe file I/O handling ensuring full compatibility in read-only and WebAssembly virtual environments.
+* **Interactive 3-Letter Initials Entry (`Class_HighScoreEntry`)**:
+  * Triggers when the player surpasses the active high score upon Game Over or manual Menu return.
+  * Retro arcade dialog modal rendered centered on screen with double gold borders.
+  * Supports direct letter typing (`A–Z`, `0–9`), `BACKSPACE`, `LEFT`/`RIGHT` cursor navigation, and `UP`/`DOWN` character cycling.
+  * Active letter slot features pulsing indicator and directional chevrons (`▲`/`▼`).
+  * Pressing `ENTER` commits initials, updates `globals.HIGH_SCORE` and `globals.HIGH_SCORE_INITIALS`, saves to `highscore.json`, and plays confirmation sound.
+* **HUD & Menu Display**:
+  * In-game top status bar now displays `HI: <score> (<initials>)` alongside `SCORE`, `LIVES`, `LEVEL`, and `[ENTER: MENU]`.
+  * Start Menu header showcases high score marquee: `★ HIGH SCORE: <score> [<initials>] ★`.
+* **Automated Unit & Regression Tests**:
+  * `scratch/test_high_score.py`: 100% PASS (default loading, qualification checks, persistence, keyboard typing, arrow cycling, confirmation, and surface rendering).
+* **WebAssembly Bundle**:
+  * Rebuilt via Pygbag and synced `pyzerk.apk` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **High Score System**:
+  * Persistent high score with interactive 3-letter initials entry upon beating records.
+  * In-game top status bar `HI` indicator and Start Menu high score marquee.
 * **Lives System & Status Bar**:
   * 3 starting lives, respawn pause on death preserving room progress, and Game Over sequence when out of lives.
   * +1 extra life awarded every 10 levels passed with celebratory on-screen banner.
   * Level loop around when surpassing max level (50) wrapping cleanly to Level 1 and tracking loop cycles with milestone celebration and HUD indicator.
-  * In-game top status bar displaying SCORE, LIVES (with color indicator), LEVEL / LOOP, and MENU hint.
-* **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, and updated controls legend explaining the lives mechanic.
+* **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 * **All Test Suites Passing**:
+  * `scratch/test_high_score.py`: PASSED (100%)
   * `scratch/test_lives_system.py`: PASSED (100%)
   * `scratch/test_game.py`: PASSED (100%)
   * `scratch/test_start_menu_features.py`: PASSED (100%)
