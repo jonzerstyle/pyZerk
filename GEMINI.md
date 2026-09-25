@@ -247,11 +247,34 @@ This document tracks all features, architectural changes, audio updates, and dep
     * Player at LEFT / RIGHT -> banner renders at top (`y=37`). No overlap (100% PASS).
   * Generated visual verification captures: `scratch/test_popup_bottom_render.png` and `scratch/test_popup_top_render.png`.
 
+### 13. Web Environment Resilience & ESC Key Handling
+* **Bug Identified**:
+  * Hitting `ESC` while playing the game in the web deploy environment caused the web interface to hang / freeze on the last canvas frame.
+  * Root Cause:
+    * In [`keybo.py`](file:///home/mjones/agy/pyzerk/keybo.py), `event.key == pygame.K_ESCAPE` was setting `self.running = 0`.
+    * This terminated the `while keybo.running == True:` loop in `main.py`, exiting the `main()` coroutine.
+    * In browser WebAssembly (Pygbag), exiting `main()` terminates the asyncio animation pump without closing the browser tab, causing the canvas to permanently freeze.
+* **Fixes Implemented**:
+  * **Gameplay ESC Key Handling ([`keybo.py`](file:///home/mjones/agy/pyzerk/keybo.py))**:
+    * Updated key handler so both `pygame.K_ESCAPE` and `pygame.K_RETURN` set `self.return_to_menu = True` and `globals.MENUON = True`.
+    * Hitting `ESC` during gameplay cleanly pauses the game and transitions to the Start Menu instead of stopping the runtime.
+  * **Web Environment Loop Protection ([`keybo.py`](file:///home/mjones/agy/pyzerk/keybo.py), [`menu.py`](file:///home/mjones/agy/pyzerk/menu.py), [`main.py`](file:///home/mjones/agy/pyzerk/main.py))**:
+    * Gated `QUIT` event and menu ESC actions behind `if not highscore.is_web_env(): keybo.running = False`.
+    * In web deployments, the game loop remains active and responsive indefinitely.
+  * **HUD & Menu Controls Legend Updated**:
+    * In-game top bar updated with `[ESC: MENU]`.
+    * Start Menu controls legend updated to list `ESC / ENTER: Pause and return back to Main Menu anytime during gameplay`.
+  * **Automated Verification**:
+    * Created `scratch/test_esc_key_behavior.py` verifying that hitting `ESC` during gameplay sets `return_to_menu = True`, `MENUON = True`, keeps `running = 1`, and prevents WebAssembly event loop termination (100% PASS).
+  * **WASM Rebuild**:
+    * Rebuilt `pyzerk.apk` via Pygbag and synced to both `webdeploy/` and `gemini_integrated_website/pyzerk/`.
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Web Resilience & ESC Key Handling**: Pressing ESC in gameplay smoothly pauses and returns to the Start Menu without freezing the WebAssembly runtime; browser event loop protected against abrupt termination.
 * **Dynamic Status Popup Positioning**: Status banners (robot startle countdown, level loop milestone, 10-level bonus life) dynamically shift to the bottom of the screen whenever the player enters at the top, ensuring unobstructed view of the player.
 * **Exit Corridor & Doorway Safety**: Complete immunity to wall electrocution while touching exits or during pending escape transitions; generous doorway hitbox buffer eliminates doorframe clipping deaths.
 * **Web UI Cleanup**: Debug terminal, xterm console, and status log overlay completely hidden and suppressed in both `webdeploy/` and `gemini_integrated_website/pyzerk/`.
@@ -273,6 +296,7 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 * **All Test Suites Passing (100%)**:
+  * `scratch/test_esc_key_behavior.py`: PASSED (100%)
   * `scratch/test_popup_positioning.py`: PASSED (100%)
   * `scratch/test_exit_entrance_safety.py`: PASSED (100%)
   * `scratch/test_escape_routes.py`: PASSED (100%)

@@ -1,6 +1,7 @@
 import pygame
 import globals
 import sounds
+import highscore
 
 class Class_StartMenu:
     """Start menu for pyZerk.
@@ -56,11 +57,11 @@ class Class_StartMenu:
     def handle_event(self, event):
         """Handle a single pygame event. Returns action string or None."""
         if event.type == pygame.QUIT:
-            return "QUIT"
+            return "QUIT" if not highscore.is_web_env() else None
         
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                return "QUIT"
+                return "QUIT" if not highscore.is_web_env() else None
             
             # Arrow key / WASD navigation
             elif event.key in (pygame.K_UP, pygame.K_w):
@@ -367,7 +368,7 @@ class Class_StartMenu:
             ("ARROW KEYS:", "Move / Run character in 8 directions (Up, Down, Left, Right, Diagonals)"),
             ("LEFT CTRL:",  "HOLD Left Ctrl + Arrow Keys to aim laser gun and shoot"),
             ("LIVES SYSTEM:", "Start with 3 lives. Pass every 10 levels to earn +1 extra life!"),
-            ("ENTER KEY:",  "Return back to Main Menu anytime during gameplay"),
+            ("ESC / ENTER:", "Pause and return back to Main Menu anytime during gameplay"),
             ("MENU KEYS:",  "UP/DOWN = Select option | LEFT/RIGHT = Volume | ENTER = Confirm / Sample"),
             ("OBJECTIVE:",  "Eliminate all robots or reach maze exits! Beware of bouncing OTTO!")
         ]

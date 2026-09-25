@@ -1,6 +1,7 @@
 import pygame
 import movement
 import globals
+import highscore
 
 class Class_ProcessKeybo():
     def __init__(self):
@@ -50,11 +51,13 @@ class Class_ProcessKeybo():
             events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
-                self.running = 0
-            elif event.type == pygame.KEYDOWN: 
-                if event.key == pygame.K_ESCAPE:
+                if not highscore.is_web_env():
                     self.running = 0
-                elif event.key == pygame.K_RETURN:
+                else:
+                    self.return_to_menu = True
+                    globals.MENUON = True
+            elif event.type == pygame.KEYDOWN: 
+                if event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
                     self.return_to_menu = True
                     globals.MENUON = True
                 elif event.key == pygame.K_F11:

@@ -217,7 +217,7 @@ def draw_hud(screen, hud_font):
         level_text = f"LEVEL: {globals.LEVEL}"
     level_surf = hud_font.render(level_text, True, globals.CYAN)
     hi_surf = hud_font.render(f"HI: {globals.HIGH_SCORE} ({globals.HIGH_SCORE_INITIALS})", True, (255, 215, 0))
-    menu_hint_surf = hud_font.render("[ENTER: MENU]", True, globals.YELLOW)
+    menu_hint_surf = hud_font.render("[ESC: MENU]", True, globals.YELLOW)
     screen.blit(score_surf, (15, 8))
     screen.blit(lives_surf, (155, 8))
     screen.blit(level_surf, (270, 8))
@@ -324,8 +324,9 @@ async def main():
                     startNewGame()
                     break
                 elif action == "QUIT":
-                    keybo.running = False
-                    break
+                    if not highscore.is_web_env():
+                        keybo.running = False
+                        break
 
             if globals.MENUON:
                 start_menu.draw(screen)
