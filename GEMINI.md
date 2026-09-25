@@ -269,11 +269,44 @@ This document tracks all features, architectural changes, audio updates, and dep
   * **WASM Rebuild**:
     * Rebuilt `pyzerk.apk` via Pygbag and synced to both `webdeploy/` and `gemini_integrated_website/pyzerk/`.
 
+### 14. 10-Level Bonus Life Celebration Display & Multi-Banner Stacking
+* **Issue Uncovered**:
+  * Inquiry: *"also is there a status display when 10 levels are passed and an extra life is awarded?"*
+  * Root Cause:
+    * Although `globals.LIVES += 1` and `bonus_life_timer = 60` were set upon passing every 10 levels, the render loop used an `if ... elif ...` structure:
+      ```python
+      if globals.ROBOT_STARTLE_TIMER > 0:
+          # draw startle banner
+      elif loop_banner_timer > 0:
+          # draw loop banner
+      elif bonus_life_timer > 0:
+          # draw bonus life banner
+      ```
+    * Entering any new level initializes `ROBOT_STARTLE_TIMER = 150` (5 seconds @ 30 FPS).
+    * Because `ROBOT_STARTLE_TIMER > 0` was always active when the player arrived at the 11th, 21st, etc. level, the `elif bonus_life_timer > 0` branch was **completely shadowed** and never rendered!
+* **Fixes Implemented**:
+  * **Independent Multi-Banner Stacking ([`main.py`](file:///home/mjones/agy/pyzerk/main.py))**:
+    * Replaced the `if ... elif ...` chain with independent banner rendering and vertical stacking offsets (`offset_y`).
+    * Updated `draw_status_banner(screen, banner_font, text, text_color, border_color, bg_color, is_bottom, offset_y=0)`:
+      * When rendering at top: `by = 37 + offset_y`.
+      * When rendering at bottom: `by = globals.SCREENSIZE[1] - surf.get_height() - 22 - offset_y`.
+    * Cleanly stacks multiple active banners (e.g. Bonus Life on primary line, Robot Startle on secondary line with 28px separation, 0 overlap).
+  * **Celebratory Audio & Visual Enhancements**:
+    * Increased banner duration to 90 frames (~3 full seconds).
+    * Prominent gold styling: `*** 10 LEVELS PASSED! +1 EXTRA LIFE! (LIVES: X) ***` in bright gold (`(255, 230, 0)`), gold border (`(255, 215, 0)`), and dark background.
+    * Added celebratory chime playback (`sounds.playSound(sounds.welcomeSound)`).
+    * Standardized banner decorators to ASCII `***` for flawless rendering across all bitmap and browser canvas fonts.
+  * **Automated Verification**:
+    * Created [`scratch/test_bonus_life_display.py`](file:///home/mjones/agy/pyzerk/scratch/test_bonus_life_display.py) testing top stacking, bottom stacking, 10-level pass triggering via robot destruction and green exit escape, and banner coexistence without shadowing (100% PASS).
+  * **WASM Rebuild**:
+    * Rebuilt `pyzerk.apk` via Pygbag and synced to both `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **10-Level Bonus Life Celebration Banner**: Un-shadowed from robot startle banner; renders in prominent gold with stacked dual-banner positioning (`offset_y=28`) and celebratory audio chime; 100% visible on both top and bottom entry sides.
 * **Web Resilience & ESC Key Handling**: Pressing ESC in gameplay smoothly pauses and returns to the Start Menu without freezing the WebAssembly runtime; browser event loop protected against abrupt termination.
 * **Dynamic Status Popup Positioning**: Status banners (robot startle countdown, level loop milestone, 10-level bonus life) dynamically shift to the bottom of the screen whenever the player enters at the top, ensuring unobstructed view of the player.
 * **Exit Corridor & Doorway Safety**: Complete immunity to wall electrocution while touching exits or during pending escape transitions; generous doorway hitbox buffer eliminates doorframe clipping deaths.
@@ -295,7 +328,8 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **All Test Suites Passing (100%)**:
+* **All 12 Test Suites Passing (100%)**:
+  * `scratch/test_bonus_life_display.py`: PASSED (100%)
   * `scratch/test_esc_key_behavior.py`: PASSED (100%)
   * `scratch/test_popup_positioning.py`: PASSED (100%)
   * `scratch/test_exit_entrance_safety.py`: PASSED (100%)

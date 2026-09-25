@@ -224,14 +224,14 @@ def draw_hud(screen, hud_font):
     screen.blit(hi_surf, (440, 8))
     screen.blit(menu_hint_surf, (665, 8))
 
-def draw_status_banner(screen, banner_font, text, text_color, border_color, bg_color, is_bottom):
-    """Draw status popup banner at top or bottom to avoid obscuring the player."""
+def draw_status_banner(screen, banner_font, text, text_color, border_color, bg_color, is_bottom, offset_y=0):
+    """Draw status popup banner at top or bottom to avoid obscuring the player, with optional vertical stacking offset."""
     surf = banner_font.render(text, True, text_color)
     bx = (globals.SCREENSIZE[0] - surf.get_width()) // 2
     if is_bottom:
-        by = globals.SCREENSIZE[1] - surf.get_height() - 22
+        by = globals.SCREENSIZE[1] - surf.get_height() - 22 - offset_y
     else:
-        by = 37
+        by = 37 + offset_y
     bg_rect = pygame.Rect(bx - 12, by - 3, surf.get_width() + 24, surf.get_height() + 6)
     pygame.draw.rect(screen, bg_color, bg_rect)
     pygame.draw.rect(screen, border_color, bg_rect, 1)
@@ -453,7 +453,9 @@ async def main():
                 globals.LEVELS_PASSED += 1
                 if globals.LEVELS_PASSED % 10 == 0:
                     globals.LIVES += 1
-                    bonus_life_timer = 60
+                    bonus_life_timer = 90  # ~3 seconds celebratory banner
+                    if globals.SOUNDS_ON:
+                        sounds.playSound(sounds.welcomeSound)
                 globals.LEVEL += 1
                 if globals.LEVEL > globals.MAX_LEVELS:
                     globals.LEVEL = 1
@@ -518,7 +520,9 @@ async def main():
                 # Award one life back every ten levels passed
                 if globals.LEVELS_PASSED % 10 == 0:
                     globals.LIVES += 1
-                    bonus_life_timer = 60  # ~2 seconds banner
+                    bonus_life_timer = 90  # ~3 seconds celebratory banner
+                    if globals.SOUNDS_ON:
+                        sounds.playSound(sounds.welcomeSound)
                 did_loop = startNewLevel()
                 if did_loop:
                     loop_banner_timer = 90  # ~3 seconds milestone banner for looping game
@@ -538,19 +542,28 @@ async def main():
             len(globals.PLAYER.sprites()) > 0 and globals.PLAYER.sprites()[0].pos[1] < 120
         )
 
-        # Draw robot startle banner if active
-        if globals.ROBOT_STARTLE_TIMER > 0 and game_over_timer == 0 and respawn_timer == 0:
-            secs_left = math.ceil(globals.ROBOT_STARTLE_TIMER / globals.FRAME_RATE_SETTING)
-            startle_msg = f"★ ROBOTS STARTLED! NO FIRING ({secs_left}s) ★"
-            dirtyrects.append(draw_status_banner(screen, banner_font, startle_msg, (0, 255, 200), (0, 230, 80), (10, 25, 20), is_player_at_top))
-        # Draw loop-around milestone banner when max level is surpassed
-        elif loop_banner_timer > 0 and game_over_timer == 0 and respawn_timer == 0:
-            loop_msg = f"★ MAX LEVEL SURPASSED! ENTERING LOOP {globals.LEVEL_LOOP + 1}! ★"
-            dirtyrects.append(draw_status_banner(screen, banner_font, loop_msg, (0, 255, 255), (0, 220, 255), (10, 20, 30), is_player_at_top))
-        # Draw 10-level bonus life celebration banner
-        elif bonus_life_timer > 0 and game_over_timer == 0 and respawn_timer == 0:
-            bonus_msg = "★ 10 LEVELS PASSED! +1 EXTRA LIFE! ★"
-            dirtyrects.append(draw_status_banner(screen, banner_font, bonus_msg, (255, 230, 0), (255, 220, 0), (10, 25, 15), is_player_at_top))
+        # Draw status banners (stacked cleanly so bonus life / loop banners are not shadowed by startle banner)
+        if game_over_timer == 0 and respawn_timer == 0:
+            banner_offset = 0
+
+            # 1. Draw 10-level bonus life celebration banner (prominent gold)
+            if bonus_life_timer > 0:
+                bonus_msg = f"*** 10 LEVELS PASSED! +1 EXTRA LIFE! (LIVES: {globals.LIVES}) ***"
+                dirtyrects.append(draw_status_banner(screen, banner_font, bonus_msg, (255, 230, 0), (255, 215, 0), (35, 30, 10), is_player_at_top, offset_y=banner_offset))
+                banner_offset += 28
+
+            # 2. Draw loop-around milestone banner when max level is surpassed
+            if loop_banner_timer > 0:
+                loop_msg = f"*** MAX LEVEL SURPASSED! ENTERING LOOP {globals.LEVEL_LOOP + 1}! ***"
+                dirtyrects.append(draw_status_banner(screen, banner_font, loop_msg, (0, 255, 255), (180, 100, 255), (15, 15, 30), is_player_at_top, offset_y=banner_offset))
+                banner_offset += 28
+
+            # 3. Draw robot startle banner if active
+            if globals.ROBOT_STARTLE_TIMER > 0:
+                secs_left = math.ceil(globals.ROBOT_STARTLE_TIMER / globals.FRAME_RATE_SETTING)
+                startle_msg = f"*** ROBOTS STARTLED! NO FIRING ({secs_left}s) ***"
+                dirtyrects.append(draw_status_banner(screen, banner_font, startle_msg, (0, 255, 200), (0, 230, 80), (10, 25, 20), is_player_at_top, offset_y=banner_offset))
+                banner_offset += 28
 
         # Draw respawn notification overlay if player died but still has lives
         if respawn_timer > 0:
