@@ -7,3 +7,4 @@ dist/
 venv/
 webdeploy/
 *-pygbag.py
+scratch/*.png
