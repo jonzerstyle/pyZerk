@@ -46,7 +46,7 @@ LEVEL = 0
 OTTOTIMER = 0
 NUM_OF_ROBOTS = 12
 
-MENUON = False
+MENUON = True
 
 # Import the android module. If we can't import it, set it to None - this
 # lets us test it, and check to see if we want android-specific behavior.

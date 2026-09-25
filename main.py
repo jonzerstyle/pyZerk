@@ -38,6 +38,7 @@ import maze
 import otto
 import walls
 import text
+import menu
 from cclass import Class_Container
 from keybo import Class_ProcessKeybo 
 from pygame.locals import *
@@ -75,6 +76,22 @@ def startNewLevel():
     for a in globals.ROBOTS.sprites():
         a.levelUp(globals.LEVEL)
     maze.Class_Maze(globals.SCREENSIZE)
+
+def startNewGame():
+    """Start a fresh new game from Level 1, resetting score and level."""
+    globals.SCORE = 0
+    globals.LEVEL = 0
+    for a in globals.OBJECTS:
+        a.kill()
+    startNewLevel()
+    globals.MENUON = False
+    sounds.start_game_music()
+
+def returnToMenu():
+    """Return to start menu, halting gameplay entities while keeping music active."""
+    globals.MENUON = True
+    for a in globals.OBJECTS:
+        a.kill()
 
 def updateMovement(main_containerObj):
     for a in globals.PLAYER.sprites():
@@ -131,7 +148,6 @@ async def main():
 
     clock = pygame.time.Clock()
     olddirtyrects = []
-    init = True
     genTickTimer = pygame.time.get_ticks()
     globals.OTTOTIMER = otto.ottoTimerReload 
 
@@ -143,65 +159,87 @@ async def main():
     #create a container for generic vars
     mainContainerC = Class_Container()
 
-    #setup soundtrack
-    if globals.SOUNDS_ON and mixer.get_init() and sounds.soundTrack0Sound: 
+    # Welcome voice on boot and start background music
+    if globals.SOUNDS_ON and mixer.get_init(): 
         sounds.playSound(sounds.welcomeSound) 
-        sounds.playSound(sounds.robotWalkSound) 
-        try:
-            mixer.Channel(sounds.SOUNDTRACK_CHAN).play(sounds.soundTrack0Sound, -1)
-        except Exception:
-            pass
+        sounds.start_game_music() 
+
+    # Start Menu initialization
+    start_menu = menu.Class_StartMenu()
+    globals.MENUON = True
+    hud_font = pygame.font.Font(None, 24)
 
     #main loop
     while keybo.running == True:
         dt = clock.tick(globals.FRAME_RATE_SETTING)
         globals.FPS = 1000.0 / dt if dt > 0 else float(globals.FRAME_RATE_SETTING)
-        if init == True:
-            init = False
-            #startNewLevel()
-            #show menu instead of starting game
-            text.Class_Text((0,0), "First Menu Item", globals.WHITE)
 
         # Android-specific:
         if globals.android:
             if globals.android.check_pause():
                 globals.android.wait_for_resume()
 
-        #keyboard processing
-        keybo.run(globals.SCREENSIZE, screen, globals.SCREEN_BACKCOLOR, mainContainerC)
+        events = pygame.event.get()
 
-        #update object movement
+        # START MENU MODE
+        if globals.MENUON:
+            for event in events:
+                action = start_menu.handle_event(event)
+                if action == "START_GAME":
+                    startNewGame()
+                    break
+                elif action == "QUIT":
+                    keybo.running = False
+                    break
+
+            if globals.MENUON:
+                start_menu.draw(screen)
+                pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+
+        # GAMEPLAY MODE
+        # Keyboard processing
+        keybo.run(globals.SCREENSIZE, screen, globals.SCREEN_BACKCOLOR, mainContainerC, events=events)
+        if keybo.return_to_menu:
+            returnToMenu()
+            continue
+
+        # Update object movement
         updateMovement(mainContainerC)
 
-        #look for collisions 
+        # Look for collisions 
         detCollisions(keybo)
 
-        #tick off here once per second
+        # Tick off here once per second
         genTickTimer = oneSecTimer(genTickTimer)
 
-        #update objects
+        # Update objects
         for a in globals.OBJECTS:
             a.update()
 
-        #blank the screen
+        # Blank the screen
         screen.fill(globals.SCREEN_BACKCOLOR)
         dirtyrects = []
 
         for a in globals.OBJECTS.sprites():
             dirtyrects += a.draw(screen)
 
-        #draw the text
-        for a in globals.TEXT.sprites():
-            a.update(str(globals.SCORE))
-            dirtyrects += a.draw(screen)
+        # Draw in-game HUD
+        score_surf = hud_font.render(f"SCORE: {globals.SCORE}", True, globals.WHITE)
+        level_surf = hud_font.render(f"LEVEL: {globals.LEVEL}", True, globals.CYAN)
+        menu_hint_surf = hud_font.render("[ENTER: MENU]", True, globals.YELLOW)
+        dirtyrects.append(screen.blit(score_surf, (15, 8)))
+        dirtyrects.append(screen.blit(level_surf, (360, 8)))
+        dirtyrects.append(screen.blit(menu_hint_surf, (670, 8)))
 
-        #update the display
+        # Update the display
         pygame.display.flip()
         olddirtyrects = dirtyrects
 
-        #check to see if all robots destroyed or player destroyed to go to next level
-        if (globals.MENUON == False):
-            if ((len(globals.PLAYER.sprites()) == 0) | (len(globals.ROBOTS.sprites()) == 0)):
+        # Check to see if all robots destroyed or player destroyed to go to next level
+        if globals.MENUON == False:
+            if (len(globals.PLAYER.sprites()) == 0) or (len(globals.ROBOTS.sprites()) == 0):
                 startNewLevel()
 
         await asyncio.sleep(0)

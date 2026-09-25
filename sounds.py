@@ -2,6 +2,7 @@ import globals
 import pygame
 import misc
 import os
+import sys
 
 try:
     import pygame.mixer as mixer
@@ -10,6 +11,25 @@ except ImportError:
 
 # Reserve channel 0 exclusively for background soundtrack so SFX never interrupt it
 SOUNDTRACK_CHAN = 0
+
+# Volume settings (0.0 to 1.0)
+music_volume = 0.7
+sfx_volume = 0.7
+
+SFX_BASE_VOLUMES = {
+    "playerDeathSound": 0.8,
+    "robotExplodeSound": 0.50,
+    "gameOverSound": 0.8,
+    "welcomeSound": 0.8,
+    "robotWalkSound": 0.25,
+    "playerGunSound": 0.35,
+    "robotGunSound": 0.15,
+    "robotShotSound": 0.5,
+    "bulletClashSound": 0.30,
+    "nextLevelSound": 0.8,
+    "ottoAliveSound": 0.8,
+}
+MUSIC_BASE_VOLUME = 0.80
 
 # Initialize sounds to None
 playerDeathSound = None
@@ -44,6 +64,130 @@ def _load_sound(base_name):
         except Exception:
             return None
 
+def _get_sound_obj(name):
+    return getattr(sys.modules[__name__], name, None)
+
+def apply_volumes():
+    """Apply current volume multipliers to loaded sounds."""
+    for name, base_vol in SFX_BASE_VOLUMES.items():
+        snd = _get_sound_obj(name)
+        if snd is not None:
+            try:
+                snd.set_volume(base_vol * sfx_volume)
+            except Exception:
+                pass
+    if soundTrack0Sound is not None:
+        try:
+            soundTrack0Sound.set_volume(MUSIC_BASE_VOLUME * music_volume)
+        except Exception:
+            pass
+
+def set_music_volume(volume):
+    """Set music volume scale (0.0 to 1.0) and apply to soundtrack in real-time."""
+    global music_volume
+    music_volume = max(0.0, min(1.0, float(volume)))
+    effective_vol = MUSIC_BASE_VOLUME * music_volume
+    if soundTrack0Sound is not None:
+        try:
+            soundTrack0Sound.set_volume(effective_vol)
+        except Exception:
+            pass
+    try:
+        if mixer.get_init():
+            chan = mixer.Channel(SOUNDTRACK_CHAN)
+            if music_volume <= 0.001:
+                chan.set_volume(0.0)
+            else:
+                chan.set_volume(1.0)
+                # If channel is not currently playing music, start it
+                if not chan.get_busy() and soundTrack0Sound is not None:
+                    chan.play(soundTrack0Sound, -1)
+    except Exception:
+        pass
+
+def get_music_volume():
+    """Return current music volume (0.0 to 1.0)."""
+    return music_volume
+
+def set_sfx_volume(volume):
+    """Set SFX volume scale (0.0 to 1.0) and apply to all SFX."""
+    global sfx_volume
+    sfx_volume = max(0.0, min(1.0, float(volume)))
+    for name, base_vol in SFX_BASE_VOLUMES.items():
+        snd = _get_sound_obj(name)
+        if snd is not None:
+            try:
+                snd.set_volume(base_vol * sfx_volume)
+            except Exception:
+                pass
+
+def get_sfx_volume():
+    """Return current SFX volume (0.0 to 1.0)."""
+    return sfx_volume
+
+def play_nav_sound():
+    """Play a short, crisp retro tick for menu navigation and volume adjustments."""
+    if not globals.SOUNDS_ON or not mixer.get_init() or bulletClashSound is None:
+        return
+    try:
+        bulletClashSound.set_volume(SFX_BASE_VOLUMES["bulletClashSound"] * max(0.3, sfx_volume))
+        playSound(bulletClashSound)
+    except Exception:
+        pass
+
+def play_music_sample(duration_ms=None):
+    """Restart and play music sample from the beginning at current music volume."""
+    if not globals.SOUNDS_ON or not mixer.get_init() or soundTrack0Sound is None:
+        return
+    try:
+        chan = mixer.Channel(SOUNDTRACK_CHAN)
+        chan.stop()
+        if music_volume > 0.001:
+            soundTrack0Sound.set_volume(MUSIC_BASE_VOLUME * music_volume)
+            chan.set_volume(1.0)
+            chan.play(soundTrack0Sound, -1)
+    except Exception:
+        pass
+
+def play_sfx_sample(sample_type="gun"):
+    """Play a sample output of sound effects at current SFX volume."""
+    if not globals.SOUNDS_ON or not mixer.get_init():
+        return
+    try:
+        target_snd = playerGunSound if sample_type == "gun" else robotExplodeSound
+        if target_snd is None:
+            target_snd = playerGunSound or robotExplodeSound
+        if target_snd and sfx_volume > 0.001:
+            base_vol = SFX_BASE_VOLUMES.get("playerGunSound", 0.35)
+            target_snd.set_volume(base_vol * sfx_volume)
+            playSound(target_snd)
+    except Exception:
+        pass
+
+def start_game_music():
+    """Start looping background music at current music volume."""
+    if not globals.SOUNDS_ON or not mixer.get_init() or soundTrack0Sound is None:
+        return
+    try:
+        chan = mixer.Channel(SOUNDTRACK_CHAN)
+        if music_volume > 0.001:
+            soundTrack0Sound.set_volume(MUSIC_BASE_VOLUME * music_volume)
+            chan.set_volume(1.0)
+            if not chan.get_busy():
+                chan.play(soundTrack0Sound, -1)
+    except Exception:
+        pass
+
+def stop_game_music():
+    """Stop the background music channel."""
+    if not globals.SOUNDS_ON or not mixer.get_init():
+        return
+    try:
+        chan = mixer.Channel(SOUNDTRACK_CHAN)
+        chan.stop()
+    except Exception:
+        pass
+
 def init_mixer():
     global playerDeathSound, robotExplodeSound, gameOverSound, welcomeSound
     global robotWalkSound, playerGunSound, robotGunSound, robotShotSound
@@ -76,52 +220,19 @@ def init_mixer():
 
     try:
         playerDeathSound = _load_sound("player_death")
-        if playerDeathSound:
-            playerDeathSound.set_volume(0.8)
-
         robotExplodeSound = _load_sound("robot_explode")
-        if robotExplodeSound:
-            robotExplodeSound.set_volume(0.25)
-
         gameOverSound = _load_sound("gameover")
-        if gameOverSound:
-            gameOverSound.set_volume(0.8)
-
         welcomeSound = _load_sound("welcome")
-        if welcomeSound:
-            welcomeSound.set_volume(0.8)
-
         robotWalkSound = _load_sound("robot_walk")
-        if robotWalkSound:
-            robotWalkSound.set_volume(0.20)
-
         playerGunSound = _load_sound("player_gun")
-        if playerGunSound:
-            playerGunSound.set_volume(0.12)
-
         robotGunSound = _load_sound("player_gun")
-        if robotGunSound:
-            robotGunSound.set_volume(0.06)
-
         robotShotSound = _load_sound("robot_shot")
-        if robotShotSound:
-            robotShotSound.set_volume(0.5)
-
         bulletClashSound = _load_sound("bullet_clash")
-        if bulletClashSound:
-            bulletClashSound.set_volume(0.12)
-
         nextLevelSound = _load_sound("nextlevel")
-        if nextLevelSound:
-            nextLevelSound.set_volume(0.8)
-
         ottoAliveSound = _load_sound("otto")
-        if ottoAliveSound:
-            ottoAliveSound.set_volume(0.8)
-
         soundTrack0Sound = _load_sound("BMUSIC")
-        if soundTrack0Sound:
-            soundTrack0Sound.set_volume(0.20)
+
+        apply_volumes()
     except Exception:
         globals.SOUNDS_ON = False
 

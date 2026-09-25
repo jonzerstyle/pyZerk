@@ -1,12 +1,16 @@
 import pygame
 import movement
+import globals
 
 class Class_ProcessKeybo():
     def __init__(self):
         self.collisionOn = 0
         self.running = 1
         self.fullscreen = 0
-    def run(self, screensize, screen, screen_backcolor, mainContC):
+        self.return_to_menu = False
+
+    def run(self, screensize, screen, screen_backcolor, mainContC, events=None):
+        self.return_to_menu = False
         keys = pygame.key.get_pressed()
 
         # totally wierd SPACE key is blocked
@@ -22,27 +26,28 @@ class Class_ProcessKeybo():
         #       upleft, upright, downleft, downright
         #   next:
         #       test singles
-        if keys[pygame.K_UP] == 1 & keys[pygame.K_LEFT] == 1:
-            mainContC.addItem("player_movement",movement.dirEnum.UPLEFT)
-        elif keys[pygame.K_UP] == 1 & keys[pygame.K_RIGHT] == 1: 
-            mainContC.addItem("player_movement",movement.dirEnum.UPRIGHT)
-        elif keys[pygame.K_DOWN] == 1 & keys[pygame.K_LEFT] == 1: 
-            mainContC.addItem("player_movement",movement.dirEnum.DOWNLEFT)
-        elif keys[pygame.K_DOWN] == 1 & keys[pygame.K_RIGHT] == 1: 
-            mainContC.addItem("player_movement",movement.dirEnum.DOWNRIGHT)
+        if keys[pygame.K_UP] == 1 and keys[pygame.K_LEFT] == 1:
+            mainContC.addItem("player_movement", movement.dirEnum.UPLEFT)
+        elif keys[pygame.K_UP] == 1 and keys[pygame.K_RIGHT] == 1: 
+            mainContC.addItem("player_movement", movement.dirEnum.UPRIGHT)
+        elif keys[pygame.K_DOWN] == 1 and keys[pygame.K_LEFT] == 1: 
+            mainContC.addItem("player_movement", movement.dirEnum.DOWNLEFT)
+        elif keys[pygame.K_DOWN] == 1 and keys[pygame.K_RIGHT] == 1: 
+            mainContC.addItem("player_movement", movement.dirEnum.DOWNRIGHT)
         #test single keys
         elif keys[pygame.K_UP] == 1: 
-            mainContC.addItem("player_movement",movement.dirEnum.UP)
+            mainContC.addItem("player_movement", movement.dirEnum.UP)
         elif keys[pygame.K_DOWN] == 1: 
-            mainContC.addItem("player_movement",movement.dirEnum.DOWN)
+            mainContC.addItem("player_movement", movement.dirEnum.DOWN)
         elif keys[pygame.K_LEFT] == 1: 
-            mainContC.addItem("player_movement",movement.dirEnum.LEFT)
+            mainContC.addItem("player_movement", movement.dirEnum.LEFT)
         elif keys[pygame.K_RIGHT] == 1: 
-            mainContC.addItem("player_movement",movement.dirEnum.RIGHT)
+            mainContC.addItem("player_movement", movement.dirEnum.RIGHT)
         else:
-            mainContC.addItem("player_movement",movement.dirEnum.NONE)
+            mainContC.addItem("player_movement", movement.dirEnum.NONE)
 
-        events = pygame.event.get()
+        if events is None:
+            events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
                 self.running = 0
@@ -50,6 +55,9 @@ class Class_ProcessKeybo():
                 if event.key == pygame.K_ESCAPE:
                     self.running = 0
                 elif event.key == pygame.K_RETURN:
+                    self.return_to_menu = True
+                    globals.MENUON = True
+                elif event.key == pygame.K_F11:
                     if self.fullscreen == 0:
                         pygame.display.set_mode(screensize, pygame.FULLSCREEN)
                         pygame.mouse.set_visible(False)
