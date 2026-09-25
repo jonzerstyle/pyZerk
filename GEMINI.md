@@ -200,16 +200,31 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **WebAssembly Bundle**:
   * Rebuilt via Pygbag and synced `pyzerk.apk` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 
+### 10. Web Deployment UI Cleanup: Debug Terminal & Log Overlay Suppression
+* **Issue Addressed**:
+  * In the browser deployment, Pygbag's xterm.js terminal (`#pyconsole` / `#terminal`) and the on-screen debug log overlay (`#debug_overlay`) were visible over or below the game screen.
+* **Changes Applied to [`webdeploy/index.html`](file:///home/mjones/agy/pyzerk/webdeploy/index.html) and [`../gemini_integrated_website/pyzerk/index.html`](file:///home/mjones/agy/gemini_integrated_website/pyzerk/index.html)**:
+  * **CSS Hard Suppression**: Added `#debug_overlay, #pyconsole, #terminal, .xterm { display: none !important; visibility: hidden !important; }`.
+  * **DOM Attributes**: Set `hidden` and inline `style="display: none !important;"` on `#debug_overlay`, `#pyconsole`, and `#terminal`.
+  * **Pygbag Engine Configuration**:
+    * Configured `xtermjs : "0"` in the root Pygbag script tag.
+    * Configured `gui_debug : 0` and `gui_divider : 1` in `PyConfig`.
+  * **Runtime Enforcer**: Explicitly set `pyconsole.hidden = true`, `pyconsole.style.display = "none"`, and `terminal.hidden = true` inside `custom_onload()`.
+* **Result**:
+  * The web game canvas displays cleanly in full focus with no terminal windows, split screens, or debug log boxes.
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Web UI Cleanup**: Debug terminal, xterm console, and status log overlay completely hidden and suppressed in both `webdeploy/` and `gemini_integrated_website/pyzerk/`.
 * **Escape Routes & Transitions**:
   * 1 to 4 perimeter green exits (30px wide, twice player character width) allowing safe room escape.
   * Smooth 24-frame scrolling transition with incoming maze walls displayed in GREY.
   * Opposite side spawn positioning for player on next maze.
   * 5-second robot startle window (robots move but cannot fire) with countdown banner.
+  * Entrance wall allocated last when assigning green exits.
 * **High Score System**:
   * Persistent high score with interactive 3-letter initials entry upon beating records.
   * Dual storage: local JSON on desktop, `window.localStorage` on WebAssembly with zero disk file writes.
@@ -232,6 +247,7 @@ This document tracks all features, architectural changes, audio updates, and dep
   * `scratch/test_direct_start_music.py`: PASSED (100%)
 
 ### Next Steps
-1. Commit updated files to branch `agy_1`.
+1. Commit tracking documentation to branch `agy_1`.
 2. Push branch `agy_1` to GitHub (`git push origin agy_1`).
+
 
