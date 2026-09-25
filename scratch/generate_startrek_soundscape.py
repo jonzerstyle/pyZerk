@@ -10,7 +10,7 @@ np.random.seed(1701)
 sr = 44100
 target_dur = 64.0  # 64.0 seconds soundscape
 total_samples = int(target_dur * sr)
-xfade_dur = 3.5    # 3.5s crossfade
+xfade_dur = 3.0    # 3.0s loop crossfade
 xfade_samples = int(xfade_dur * sr)
 
 # 1. Load backdrop (Envisioning Science Fiction Starship Ambience)
@@ -19,20 +19,37 @@ m_data, m_sr = sf.read(m_path)
 if m_sr != sr:
     raise ValueError(f"Sample rate mismatch: {m_sr} != {sr}")
 
-# Trim silence at ends
-thresh = 0.001
-act = np.where(np.abs(m_data).max(axis=1) > thresh)[0]
-m_trimmed = m_data[act[0]:act[-1]]
-m_len = len(m_trimmed)
+# Extract strictly clean segments (excluding the 'AudioJungle' voiceover watermarks at 0-2s, 11-12s, 21-22s, 31-32s)
+win1 = m_data[int(2.2 * sr) : int(10.8 * sr)]  # 8.6s
+win2 = m_data[int(12.5 * sr) : int(21.0 * sr)] # 8.5s
+win3 = m_data[int(22.8 * sr) : int(31.3 * sr)] # 8.5s
 
-# Create raw bed of length = total_samples + xfade_samples
+def xfade_pair(a, b, xf_sec=2.0):
+    xf = int(xf_sec * sr)
+    t = np.linspace(0, 1, xf, endpoint=False)
+    f_in = np.sin(t * np.pi / 2)[:, None]
+    f_out = np.cos(t * np.pi / 2)[:, None]
+    out_len = len(a) + len(b) - xf
+    out = np.zeros((out_len, 2), dtype=np.float32)
+    out[:len(a) - xf] = a[:-xf]
+    out[len(a) - xf : len(a)] = a[-xf:] * f_out + b[:xf] * f_in
+    out[len(a):] = b[xf:]
+    return out
+
+# Build pure watermark-free composite bed
+clean_composite = xfade_pair(win1, win2, 2.0)
+clean_composite = xfade_pair(clean_composite, win3, 2.0)
+c_len = len(clean_composite)
+print(f"Clean unwatermarked composite bed built: {c_len/sr:.2f}s")
+
+# Tile clean composite into raw bed of length = total_samples + xfade_samples
 raw_len = total_samples + xfade_samples
 raw_bed = np.zeros((raw_len, 2), dtype=np.float32)
 
 pos = 0
-step = m_len - xfade_samples
+step = c_len - xfade_samples
 while pos < raw_len:
-    chunk = m_trimmed
+    chunk = clean_composite
     end_pos = min(pos + len(chunk), raw_len)
     actual_chunk_len = end_pos - pos
     
@@ -48,30 +65,28 @@ while pos < raw_len:
             raw_bed[pos+xf:end_pos] = chunk[xf:actual_chunk_len]
     pos += step
 
-print(f"Backdrop bed generated: {raw_bed.shape}, duration={raw_len/sr:.2f}s")
+print(f"Extended backdrop bed tiled: duration={raw_len/sr:.2f}s, RMS={np.sqrt(np.mean(raw_bed**2)):.4f}")
 
-# 2. Pool of shorter sounds
-short_sound_files = [
+# 2. Pool of clean shorter sounds (strictly watermark-free sound effects)
+clean_short_files = [
     'trek-communicator.mp3',
+    'science-fiction-space-shu.mp3',
     'bridge_1.mp3',
     'bridge_56.mp3',
     'bridge_57.mp3',
     'bridge_74.mp3',
     'bridge_101.mp3',
-    'bridge_116.mp3',
-    'science-fiction-space-shu.mp3',
-    'space-trek-02.mp3',
-    'space-trek-03.mp3'
+    'bridge_116.mp3'
 ]
 
 short_sounds = []
-for fname in short_sound_files:
+for fname in clean_short_files:
     p = f'/home/mjones/agy/pyzerk_audio_scratch/{fname}'
     d, s = sf.read(p)
     pk = np.max(np.abs(d))
     if pk > 0:
-        # Standardize peak level to 0.40 before placement
-        d = d * (0.40 / pk)
+        # Standardize peak level to 0.35 before placement
+        d = d * (0.35 / pk)
     short_sounds.append((fname, d))
 
 # 3. Schedule random occurrences throughout raw_bed
@@ -89,7 +104,7 @@ while t_cur < target_dur - 2.5:
     pan = random.uniform(-0.35, 0.35)
     left_gain = 0.5 * (1.0 - pan)
     right_gain = 0.5 * (1.0 + pan)
-    gain = random.uniform(0.65, 0.90)
+    gain = random.uniform(0.65, 0.85)
     
     start_sample = int(t_cur * sr)
     end_sample = start_sample + len(snd)
@@ -101,7 +116,7 @@ while t_cur < target_dur - 2.5:
     
     t_cur += dur + random.uniform(3.5, 7.0)
 
-print(f"Scheduled {len(events)} short sound events:")
+print(f"Scheduled {len(events)} clean bridge sound events:")
 for ev in events:
     print(f"  at {ev[0]:5.2f}s: {ev[1]:30} (pan={ev[2]:+.2f}, gain={ev[3]:.2f})")
 
@@ -134,7 +149,7 @@ sf.write('sounds/BMUSIC.wav', mastered, sr, format='WAV', subtype='PCM_16')
 print("Successfully written to sounds/BMUSIC.wav!")
 
 # 7. Export to sounds/BMUSIC.ogg in safe chunks (Vorbis OGG)
-chunk_size = 44100  # 1-second chunks to prevent libsndfile buffer overflow
+chunk_size = 44100
 with sf.SoundFile('sounds/BMUSIC.ogg', 'w', sr, 2, format='OGG', subtype='VORBIS') as f:
     for i in range(0, len(mastered), chunk_size):
         f.write(mastered[i:i+chunk_size])
