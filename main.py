@@ -59,6 +59,7 @@ maxLevels = globals.MAX_LEVELS
 MAX_OTTOS = 1
 
 current_maze = None
+current_entry_side = None
 
 OPPOSITE_WALL = {
     'UP': 'DOWN',
@@ -76,7 +77,8 @@ def get_closest_wall_to_entry(entry_side):
 
 def setupRoom(level_num, entry_side=None, maze_instance=None):
     """Set up objects, player, robots, and maze for a level room."""
-    global current_maze
+    global current_maze, current_entry_side
+    current_entry_side = entry_side
     globals.OTTOTIMER = otto.ottoTimerReload 
     # destroy all existing objects
     for a in globals.OBJECTS:
@@ -144,10 +146,12 @@ def startNewLevel(entry_side=None, maze_instance=None):
 def respawnCurrentLevel():
     """Respawn the player and reset the room for the current level without advancing."""
     globals.ROBOT_STARTLE_TIMER = 0
-    setupRoom(globals.LEVEL)
+    setupRoom(globals.LEVEL, entry_side=current_entry_side)
 
 def startNewGame():
     """Start a fresh new game from Level 1, resetting score, lives, level, and loop counter."""
+    global current_entry_side
+    current_entry_side = None
     highscore.load_high_score()
     globals.SCORE = 0
     globals.LEVEL = 0
@@ -219,6 +223,19 @@ def draw_hud(screen, hud_font):
     screen.blit(level_surf, (270, 8))
     screen.blit(hi_surf, (440, 8))
     screen.blit(menu_hint_surf, (665, 8))
+
+def draw_status_banner(screen, banner_font, text, text_color, border_color, bg_color, is_bottom):
+    """Draw status popup banner at top or bottom to avoid obscuring the player."""
+    surf = banner_font.render(text, True, text_color)
+    bx = (globals.SCREENSIZE[0] - surf.get_width()) // 2
+    if is_bottom:
+        by = globals.SCREENSIZE[1] - surf.get_height() - 22
+    else:
+        by = 37
+    bg_rect = pygame.Rect(bx - 12, by - 3, surf.get_width() + 24, surf.get_height() + 6)
+    pygame.draw.rect(screen, bg_color, bg_rect)
+    pygame.draw.rect(screen, border_color, bg_rect, 1)
+    return screen.blit(surf, (bx, by))
 
 def _web_log(msg):
     try:
@@ -515,33 +532,24 @@ async def main():
         # Draw in-game HUD top status bar
         draw_hud(screen, hud_font)
 
+        # Determine whether status popups should appear at bottom to prevent obscuring player at top
+        is_player_at_top = (current_entry_side == 'DOWN') or (
+            len(globals.PLAYER.sprites()) > 0 and globals.PLAYER.sprites()[0].pos[1] < 120
+        )
+
         # Draw robot startle banner if active
         if globals.ROBOT_STARTLE_TIMER > 0 and game_over_timer == 0 and respawn_timer == 0:
             secs_left = math.ceil(globals.ROBOT_STARTLE_TIMER / globals.FRAME_RATE_SETTING)
             startle_msg = f"★ ROBOTS STARTLED! NO FIRING ({secs_left}s) ★"
-            startle_surf = banner_font.render(startle_msg, True, (0, 255, 200))
-            sx = (globals.SCREENSIZE[0] - startle_surf.get_width()) // 2
-            bg_rect = pygame.Rect(sx - 12, 34, startle_surf.get_width() + 24, startle_surf.get_height() + 6)
-            pygame.draw.rect(screen, (10, 25, 20), bg_rect)
-            pygame.draw.rect(screen, (0, 230, 80), bg_rect, 1)
-            dirtyrects.append(screen.blit(startle_surf, (sx, 37)))
+            dirtyrects.append(draw_status_banner(screen, banner_font, startle_msg, (0, 255, 200), (0, 230, 80), (10, 25, 20), is_player_at_top))
         # Draw loop-around milestone banner when max level is surpassed
         elif loop_banner_timer > 0 and game_over_timer == 0 and respawn_timer == 0:
             loop_msg = f"★ MAX LEVEL SURPASSED! ENTERING LOOP {globals.LEVEL_LOOP + 1}! ★"
-            loop_surf = banner_font.render(loop_msg, True, (0, 255, 255))
-            lx = (globals.SCREENSIZE[0] - loop_surf.get_width()) // 2
-            bg_rect = pygame.Rect(lx - 12, 34, loop_surf.get_width() + 24, loop_surf.get_height() + 6)
-            pygame.draw.rect(screen, (10, 20, 30), bg_rect)
-            pygame.draw.rect(screen, (0, 220, 255), bg_rect, 1)
-            dirtyrects.append(screen.blit(loop_surf, (lx, 37)))
+            dirtyrects.append(draw_status_banner(screen, banner_font, loop_msg, (0, 255, 255), (0, 220, 255), (10, 20, 30), is_player_at_top))
         # Draw 10-level bonus life celebration banner
         elif bonus_life_timer > 0 and game_over_timer == 0 and respawn_timer == 0:
-            bonus_surf = banner_font.render("★ 10 LEVELS PASSED! +1 EXTRA LIFE! ★", True, (255, 230, 0))
-            bx = (globals.SCREENSIZE[0] - bonus_surf.get_width()) // 2
-            bg_rect = pygame.Rect(bx - 12, 34, bonus_surf.get_width() + 24, bonus_surf.get_height() + 6)
-            pygame.draw.rect(screen, (10, 25, 15), bg_rect)
-            pygame.draw.rect(screen, (255, 220, 0), bg_rect, 1)
-            dirtyrects.append(screen.blit(bonus_surf, (bx, 37)))
+            bonus_msg = "★ 10 LEVELS PASSED! +1 EXTRA LIFE! ★"
+            dirtyrects.append(draw_status_banner(screen, banner_font, bonus_msg, (255, 230, 0), (255, 220, 0), (10, 25, 15), is_player_at_top))
 
         # Draw respawn notification overlay if player died but still has lives
         if respawn_timer > 0:

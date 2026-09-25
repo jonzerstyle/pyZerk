@@ -231,11 +231,28 @@ This document tracks all features, architectural changes, audio updates, and dep
   * **WASM Rebuild**:
     * Rebuilt `pyzerk.apk` and synchronized to both `webdeploy/` and `gemini_integrated_website/pyzerk/`.
 
+### 12. Dynamic Status Popup Positioning (Top vs Bottom)
+* **User Feedback / Problem**:
+  * When a player entered the maze on the top side of the screen (`entry_side == 'DOWN'`, spawning at `[400, 45]`), the status message popup banners ("ROBOTS STARTLED! NO FIRING", loop milestones, bonus lives) popped up at `Y = 34..60` directly on top of the player character, obscuring visibility.
+* **Solution**:
+  * Added `draw_status_banner(screen, banner_font, text, text_color, border_color, bg_color, is_bottom)` helper in [`main.py`](file:///home/mjones/agy/pyzerk/main.py).
+  * Dynamically evaluate `is_player_at_top = (current_entry_side == 'DOWN') or (len(globals.PLAYER.sprites()) > 0 and globals.PLAYER.sprites()[0].pos[1] < 120)`:
+    * **If player entered at top or is near the top**: Banner pops up at the **bottom side of the screen** (`Y = 435..461`), cleanly above the bottom wall with zero player overlap.
+    * **If player entered from bottom, left, or right**: Banner displays at the **top** (`Y = 34..60`) as normal.
+  * Preserved `current_entry_side` during death respawns in `respawnCurrentLevel()`.
+* **Automated Verification**:
+  * Created `scratch/test_popup_positioning.py`:
+    * Player at TOP -> banner renders at bottom (`y=438`), player at `y=33`. No overlap (100% PASS).
+    * Player at BOTTOM -> banner renders at top (`y=37`), player at `y=423`. No overlap (100% PASS).
+    * Player at LEFT / RIGHT -> banner renders at top (`y=37`). No overlap (100% PASS).
+  * Generated visual verification captures: `scratch/test_popup_bottom_render.png` and `scratch/test_popup_top_render.png`.
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Dynamic Status Popup Positioning**: Status banners (robot startle countdown, level loop milestone, 10-level bonus life) dynamically shift to the bottom of the screen whenever the player enters at the top, ensuring unobstructed view of the player.
 * **Exit Corridor & Doorway Safety**: Complete immunity to wall electrocution while touching exits or during pending escape transitions; generous doorway hitbox buffer eliminates doorframe clipping deaths.
 * **Web UI Cleanup**: Debug terminal, xterm console, and status log overlay completely hidden and suppressed in both `webdeploy/` and `gemini_integrated_website/pyzerk/`.
 * **Escape Routes & Transitions**:
@@ -256,6 +273,7 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 * **All Test Suites Passing (100%)**:
+  * `scratch/test_popup_positioning.py`: PASSED (100%)
   * `scratch/test_exit_entrance_safety.py`: PASSED (100%)
   * `scratch/test_escape_routes.py`: PASSED (100%)
   * `scratch/test_escape_route_flow.py`: PASSED (100%)
