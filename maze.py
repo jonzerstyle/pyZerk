@@ -130,60 +130,149 @@ class Class_PerfectMaze():
                 #make it the currentCell
                 currentCell = cellStack.pop(-1)
 
-# class to create a maze of wall objects
+import pygame
+import player
+
+# class to create a maze of wall objects with escape route exits
 class Class_Maze():
-    def __init__(self, screensize):
-        #create maze
-        # problem with maze when mazex is not same as mazey - TBD
-        # when they are the same - seems to work ok
+    def __init__(self, screensize, exit_dirs=None, wall_color=None, instantiate=True):
         mazex = 3
         mazey = 3
+        self.screensize = screensize
         self.wallThickness = walls.wall_pixel_size[0]
-        #pass null for borders now - need to implement in PerfectMaze - TBD
-        pmaze = Class_PerfectMaze(mazex, mazey, [])
-        self.drawMaze(screensize, pmaze.cells)
+        self.pmaze = Class_PerfectMaze(mazex, mazey, [])
+        self.wall_color = wall_color
 
-    #x,y is top left coor to draw wall box
-    #width is the width of the wall
-    #heigh is the height of the wall
-    def drawMazeWall(self, x, y, width, height):
-        # first parameter is position
-        # since x,y is top left 
-        #   to get center
-        #   pos[0] = x + width/2
-        #   pos[1] = y + height/2
-        walls.Class_Wall([x + width/2,y + height/2], [width,height])
+        # Guarantee at least 1 exit, randomly up to 4 exits covering UP, DOWN, LEFT, RIGHT
+        if exit_dirs is None:
+            num_exits = random.randint(1, 4)
+            self.exit_dirs = random.sample(['UP', 'DOWN', 'LEFT', 'RIGHT'], num_exits)
+        else:
+            self.exit_dirs = list(exit_dirs)
 
-    def drawMaze(self, screen, cells):
-        xsize = int((screen[0] - (self.wallThickness * len(cells)))/ len(cells))
-        ysize = int((screen[1] - (self.wallThickness * len(cells[0])))/ len(cells[0]))
+        self.wall_specs = []
+        self.exit_specs = []
+        self.wall_objects = []
+        self.exit_objects = []
 
-        # iterate throw each cell from left to right
-        # and draw walls if they exist
-        for x in range(0,len(cells)):
-            for y in range(0,len(cells[0])):
-                for z in range(0,len(cells[x][y].walls)):
-                    if (cells[x][y].walls[z] == True):
-                        drawTL = [y * xsize, x * ysize]
-                        #draw wall
-                        if (z == cellDirEnum.CUP):
-                            #top wall
-                            #start at top left of cell
-                            self.drawMazeWall(drawTL[0],drawTL[1],xsize,self.wallThickness) 
-                        elif (z == cellDirEnum.CDOWN):
-                            #bottom wall
-                            #start at bottom left of cell
-                            self.drawMazeWall(drawTL[0],drawTL[1] + ysize,xsize,self.wallThickness) 
-                        elif (z == cellDirEnum.CLEFT):
-                            #left wall
-                            #start at top left of cell
-                            self.drawMazeWall(drawTL[0],drawTL[1],self.wallThickness,ysize) 
-                        elif (z == cellDirEnum.CRIGHT):
-                            #right wall
-                            #start at top right of cell
-                            self.drawMazeWall(drawTL[0] + xsize,drawTL[1],self.wallThickness,ysize) 
+        self.buildMazeSpecs(screensize, self.pmaze.cells)
+        if instantiate:
+            self.instantiateObjects(wall_color)
+
+    def buildMazeSpecs(self, screen, cells):
+        # Exit length is exactly twice the width of the player character
+        exit_len = 2.0 * player.player_pixel_size[0]  # 30.0 pixels
+        w_thick = self.wallThickness
+
+        # Center coordinates for exits along outer perimeter
+        mid_x = screen[0] / 2.0
+        mid_y = screen[1] / 2.0
+
+        top_exit_x = mid_x - exit_len / 2.0
+        bot_exit_x = mid_x - exit_len / 2.0
+        left_exit_y = mid_y - exit_len / 2.0
+        right_exit_y = mid_y - exit_len / 2.0
+
+        # 1. TOP Perimeter (Y = 0)
+        if 'UP' in self.exit_dirs:
+            self.wall_specs.append((0, 0, top_exit_x, w_thick))
+            self.exit_specs.append((top_exit_x, 0, exit_len, w_thick, 'UP'))
+            self.wall_specs.append((top_exit_x + exit_len, 0, screen[0] - (top_exit_x + exit_len), w_thick))
+        else:
+            self.wall_specs.append((0, 0, screen[0], w_thick))
+
+        # 2. BOTTOM Perimeter (Y = screen[1] - w_thick)
+        bot_y = screen[1] - w_thick
+        if 'DOWN' in self.exit_dirs:
+            self.wall_specs.append((0, bot_y, bot_exit_x, w_thick))
+            self.exit_specs.append((bot_exit_x, bot_y, exit_len, w_thick, 'DOWN'))
+            self.wall_specs.append((bot_exit_x + exit_len, bot_y, screen[0] - (bot_exit_x + exit_len), w_thick))
+        else:
+            self.wall_specs.append((0, bot_y, screen[0], w_thick))
+
+        # 3. LEFT Perimeter (X = 0)
+        if 'LEFT' in self.exit_dirs:
+            self.wall_specs.append((0, 0, w_thick, left_exit_y))
+            self.exit_specs.append((0, left_exit_y, w_thick, exit_len, 'LEFT'))
+            self.wall_specs.append((0, left_exit_y + exit_len, w_thick, screen[1] - (left_exit_y + exit_len)))
+        else:
+            self.wall_specs.append((0, 0, w_thick, screen[1]))
+
+        # 4. RIGHT Perimeter (X = screen[0] - w_thick)
+        right_x = screen[0] - w_thick
+        if 'RIGHT' in self.exit_dirs:
+            self.wall_specs.append((right_x, 0, w_thick, right_exit_y))
+            self.exit_specs.append((right_x, right_exit_y, w_thick, exit_len, 'RIGHT'))
+            self.wall_specs.append((right_x, right_exit_y + exit_len, w_thick, screen[1] - (right_exit_y + exit_len)))
+        else:
+            self.wall_specs.append((right_x, 0, w_thick, screen[1]))
+
+        # 5. Internal maze walls generated by DFS
+        xsize = int((screen[0] - (w_thick * len(cells))) / len(cells))
+        ysize = int((screen[1] - (w_thick * len(cells[0]))) / len(cells[0]))
+
+        # Internal vertical walls
+        for x in range(len(cells)):
+            for y in range(len(cells[0]) - 1):
+                if cells[x][y].walls[cellDirEnum.CRIGHT] == True:
+                    wx = (y + 1) * xsize
+                    wy = x * ysize
+                    self.wall_specs.append((wx, wy, w_thick, ysize))
+
+        # Internal horizontal walls
+        for x in range(len(cells) - 1):
+            for y in range(len(cells[0])):
+                if cells[x][y].walls[cellDirEnum.CDOWN] == True:
+                    wx = y * xsize
+                    wy = (x + 1) * ysize
+                    self.wall_specs.append((wx, wy, xsize, w_thick))
+
+    def instantiateObjects(self, wall_color=None):
+        """Instantiate real Pygame sprite objects for active gameplay."""
+        self.wall_objects = []
+        self.exit_objects = []
+        for x, y, w, h in self.wall_specs:
+            center = [x + w / 2.0, y + h / 2.0]
+            w_obj = walls.Class_Wall(center, [w, h], wall_color=wall_color)
+            self.wall_objects.append(w_obj)
+
+        for x, y, w, h, d in self.exit_specs:
+            center = [x + w / 2.0, y + h / 2.0]
+            e_obj = walls.Class_ExitField(center, [w, h], d, wall_color=wall_color)
+            self.exit_objects.append(e_obj)
+
+    def render_to_surface(self, surface, offset=(0, 0), grey_mode=False):
+        """Render the maze walls and exits directly to any surface at an offset (used for scroll transitions)."""
+        wall_color = (160, 160, 160) if grey_mode else globals.BLUE
+        exit_color = (120, 120, 120) if grey_mode else (0, 230, 80)
+        ox, oy = int(offset[0]), int(offset[1])
+
+        # Draw walls
+        for x, y, w, h in self.wall_specs:
+            rect = pygame.Rect(int(x + ox), int(y + oy), int(w), int(h))
+            pygame.draw.rect(surface, wall_color, rect)
+            if not grey_mode:
+                if w > h:
+                    pygame.draw.line(surface, (80, 140, 255), (rect.left, rect.centery), (rect.right, rect.centery), 1)
+                else:
+                    pygame.draw.line(surface, (80, 140, 255), (rect.centerx, rect.top), (rect.centerx, rect.bottom), 1)
+
+        # Draw exit fields
+        for x, y, w, h, d in self.exit_specs:
+            rect = pygame.Rect(int(x + ox), int(y + oy), int(w), int(h))
+            pygame.draw.rect(surface, exit_color, rect)
+            if not grey_mode:
+                if w > h:
+                    pygame.draw.line(surface, (200, 255, 220), (rect.left, rect.centery), (rect.right, rect.centery), 2)
+                else:
+                    pygame.draw.line(surface, (200, 255, 220), (rect.centerx, rect.top), (rect.centerx, rect.bottom), 2)
+
     def destroy(self):
-        pass
+        for o in self.wall_objects:
+            o.kill()
+        for o in self.exit_objects:
+            o.kill()
+
 
 if __name__ == '__main__':
     x = Class_MCells()

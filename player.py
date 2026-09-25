@@ -193,6 +193,9 @@ class Class_Player(object.Class_Obj):
         object.Class_Obj.__init__(self, pos, speed, groups + [globals.PLAYER, globals.COLLIDABLE])
 
     def collide(self, victim):
+        # Green exit fields are not electrified - do not kill player!
+        if victim in globals.EXITS.sprites():
+            return
         if globals.SOUNDS_ON:
             sounds.playSound(sounds.playerDeathSound)
         self.killState = True

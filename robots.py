@@ -240,11 +240,11 @@ class Class_Robot(object.Class_Obj):
 
         if (self.gunHeatCnt == 0.0):
             self.gunHeatCnt = random.uniform(self.gunheatcnt_max / 2, self.gunheatcnt_max)
-            #create a bullet - if player bullet no longer exists 
-            if (self.bullets < self.max_bullets):
-                #make robot bullets red
+            # Create a bullet if player bullet limit not exceeded AND robots are not startled
+            if (self.bullets < self.max_bullets) and (globals.ROBOT_STARTLE_TIMER <= 0):
+                # Make robot bullets red
                 bullets.Class_Bullet(self, self.speed, direction, bullets.robot_bullet_color_list_pts)
-                # stop player movement while shooting
+                # Stop player movement while shooting
                 self.speed[0] = 0.0
                 self.speed[1] = 0.0
                 self.bullets += 1

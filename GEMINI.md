@@ -170,22 +170,59 @@ This document tracks all features, architectural changes, audio updates, and dep
   * Rebuilt via Pygbag and synced `pyzerk.apk` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 
 
+### 9. Escape Routes, Grey Maze Scrolling Transition, & Robot Startle System
+* **Escape Routes & Green Exit Fields (`maze.py`, `walls.py`)**:
+  * Added non-electrified **GREEN energy exits** (`Class_ExitField`) along the perimeter of the maze.
+  * Dimensions: Wall segment length is **exactly twice the width of the player character** ($2 \times 15 = 30$ pixels).
+  * Random generation: Every level is guaranteed between **1 and 4 exits** covering cardinal boundaries (`UP`, `DOWN`, `LEFT`, `RIGHT`).
+  * Non-exit border segments remain standard **BLUE electrified walls** (lethal to touch).
+  * Touching green exit safely initiates level transition without damaging the player (`globals.PENDING_EXIT`).
+* **Player Spawn Positioning on Next Maze**:
+  * Exiting through a green field spawns the player at the corresponding opposite entrance on the next maze:
+    * Exit `UP` $\to$ Spawns at `BOTTOM` ($X=400, Y=435$, facing `UP`).
+    * Exit `DOWN` $\to$ Spawns at `TOP` ($X=400, Y=45$, facing `DOWN`).
+    * Exit `LEFT` $\to$ Spawns on `RIGHT` ($X=755, Y=240$, facing `LEFT`).
+    * Exit `RIGHT` $\to$ Spawns on `LEFT` ($X=45, Y=240$, facing `RIGHT`).
+  * Clearance zones ensure the player never collides with boundary walls or robots upon entrance.
+* **5-Second Robot Startle Period (`globals.ROBOT_STARTLE_TIMER`)**:
+  * Upon entering the new maze, a 5-second startle cooldown is activated (150 frames @ 30 FPS).
+  * Robots can move, navigate, and track the player normally, but **cannot fire bullets**.
+  * A dedicated in-game HUD banner (`★ ROBOTS STARTLED! NO FIRING (Xs) ★`) gives players clear visual countdown feedback.
+* **Seamless Scrolling Maze Transition with Grey Walls**:
+  * Incoming maze is pre-generated with its walls displayed in **GREY** (`#A0A0A0`) to signify an active room transition.
+  * The camera smoothly scrolls the old maze out and the new grey maze into place (24 frames with smoothstep easing) in the direction of player travel.
+  * Gameplay entities (player, robots, Otto, bullets) are suppressed during the scroll.
+  * Upon arrival at $(0, 0)$, walls activate their normal BLUE and GREEN colors, entities appear and activate, and the 5-second robot startle timer begins.
+* **Automated Unit & Flow Tests**:
+  * `scratch/test_escape_routes.py`: 100% PASS (exit bounds, 30px dimensions, collision safety, opposite spawning, startle gating, and grey surface rendering).
+  * `scratch/test_escape_route_flow.py`: 100% PASS (full simulated interactive flow across room escape, scroll transition, and Level 2 activation).
+* **WebAssembly Bundle**:
+  * Rebuilt via Pygbag and synced `pyzerk.apk` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Escape Routes & Transitions**:
+  * 1 to 4 perimeter green exits (30px wide, twice player character width) allowing safe room escape.
+  * Smooth 24-frame scrolling transition with incoming maze walls displayed in GREY.
+  * Opposite side spawn positioning for player on next maze.
+  * 5-second robot startle window (robots move but cannot fire) with countdown banner.
 * **High Score System**:
   * Persistent high score with interactive 3-letter initials entry upon beating records.
-  * In-game top status bar `HI` indicator and Start Menu high score marquee.
+  * Dual storage: local JSON on desktop, `window.localStorage` on WebAssembly with zero disk file writes.
+  * In-game top status bar `HI` indicator and Start Menu marquee.
 * **Lives System & Status Bar**:
   * 3 starting lives, respawn pause on death preserving room progress, and Game Over sequence when out of lives.
   * +1 extra life awarded every 10 levels passed with celebratory on-screen banner.
-  * Level loop around when surpassing max level (50) wrapping cleanly to Level 1 and tracking loop cycles with milestone celebration and HUD indicator.
+  * Level loop around when surpassing max level (50) wrapping cleanly to Level 1 with loop milestones (`[LOOP 2]`).
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **All Test Suites Passing**:
+* **All Test Suites Passing (100%)**:
+  * `scratch/test_escape_routes.py`: PASSED (100%)
+  * `scratch/test_escape_route_flow.py`: PASSED (100%)
   * `scratch/test_high_score.py`: PASSED (100%)
   * `scratch/test_lives_system.py`: PASSED (100%)
   * `scratch/test_game.py`: PASSED (100%)
@@ -195,4 +232,5 @@ This document tracks all features, architectural changes, audio updates, and dep
 
 ### Next Steps
 1. Commit updated files to branch `agy_1`.
-2. Push branch `agy_1` to GitHub.
+2. Push branch `agy_1` to GitHub (`git push origin agy_1`).
+

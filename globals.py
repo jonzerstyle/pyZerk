@@ -31,7 +31,12 @@ PLAYER = pygame.sprite.GroupSingle()
 BULLETS = pygame.sprite.Group()
 COLLIDABLE = pygame.sprite.Group()
 WALLS = pygame.sprite.Group()
+EXITS = pygame.sprite.Group()
 TEXT = pygame.sprite.Group()
+
+# Escape routes & robot startle state
+ROBOT_STARTLE_TIMER = 0
+PENDING_EXIT = None
 
 FRAME_RATE_SETTING = 30
 FPS = FRAME_RATE_SETTING

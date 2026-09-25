@@ -59,12 +59,17 @@ class Class_Wall(object.Class_Obj):
     def __init__(self, pos, size = wall_pixel_size, \
                  list_polygon_pts = wall_polygon_list_pts,\
                  list_colors = wall_color_list_pts,\
+                 wall_color = None,\
                  groups = []):
-        global wall_image
-        if wall_image is None:
-            loadImages()
-        # if we are using an image scale it to the size we want
-        self.blitImage = pygame.transform.smoothscale(wall_image, size)
+        if wall_color is not None:
+            self.blitImage = pygame.Surface(size)
+            self.blitImage.fill(wall_color)
+        else:
+            global wall_image
+            if wall_image is None:
+                loadImages()
+            # if we are using an image scale it to the size we want
+            self.blitImage = pygame.transform.smoothscale(wall_image, size)
         self.angle = 0.0
         self.size = copy.deepcopy(size)
         self.list_polygon_pts =  copy.deepcopy(list_polygon_pts) 
@@ -78,5 +83,38 @@ class Class_Wall(object.Class_Obj):
         #walls are not destructable - do not kill through collision
         #just redraw
         self.update()
-        #self.killState = True
         pass
+
+# Green exit field - safe escape route to the next level
+exit_polygon_colors = [[], globals.GREEN]
+exit_color_list_pts = [exit_polygon_colors[:]]
+
+class Class_ExitField(object.Class_Obj):
+    def __init__(self, pos, size, direction, wall_color = None, groups = []):
+        self.direction = direction
+        self.angle = 0.0
+        self.size = copy.deepcopy(size)
+        self.list_polygon_pts = copy.deepcopy(wall_polygon_list_pts)
+        self.list_colors = copy.deepcopy(exit_color_list_pts)
+        self.blitImage = pygame.Surface(size)
+        if wall_color is not None:
+            self.blitImage.fill(wall_color)
+        else:
+            # Bright energetic green for exit field
+            self.blitImage.fill((0, 230, 80))
+            # Glowing core line through center
+            if size[0] >= size[1]:  # Horizontal exit
+                pygame.draw.line(self.blitImage, (200, 255, 220), (0, size[1] // 2), (size[0], size[1] // 2), 2)
+            else:  # Vertical exit
+                pygame.draw.line(self.blitImage, (200, 255, 220), (size[0] // 2, 0), (size[0] // 2, size[1]), 2)
+        speed = [0, 0]
+        object.Class_Obj.__init__(self, pos, speed, groups + [globals.EXITS, globals.COLLIDABLE])
+        self.update()
+
+    def collide(self, victim):
+        # Exit fields are not destructible
+        # If player touches, signal exit
+        if victim in globals.PLAYER.sprites():
+            globals.PENDING_EXIT = self.direction
+        self.update()
+
