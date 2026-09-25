@@ -150,9 +150,11 @@ This document tracks all features, architectural changes, audio updates, and dep
 
 ### 8. High Score Persistence & 3-Letter Initials Entry System
 * **Architecture & Storage (`highscore.py`, `highscore.json`)**:
-  * Implemented dedicated high score manager with JSON persistence (`highscore.json`).
+  * Implemented dedicated high score manager with dual persistence:
+    * **Desktop**: Local JSON file persistence (`highscore.json`).
+    * **WebDeploy (WebAssembly / Pygbag)**: Browser `window.localStorage` persistence with **ZERO disk file writes**, ensuring full persistence across browser page reloads without filesystem access errors.
   * Default record: `100` points by `CPU`.
-  * Safe file I/O handling ensuring full compatibility in read-only and WebAssembly virtual environments.
+  * Safe environment detection via `is_web_env()` ensuring file operations are never attempted in browser mode.
 * **Interactive 3-Letter Initials Entry (`Class_HighScoreEntry`)**:
   * Triggers when the player surpasses the active high score upon Game Over or manual Menu return.
   * Retro arcade dialog modal rendered centered on screen with double gold borders.

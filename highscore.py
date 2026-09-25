@@ -5,29 +5,75 @@ import globals
 import sounds
 import misc
 
+def is_web_env():
+    """Detect if running inside Pygbag WebAssembly / browser environment."""
+    try:
+        import platform
+        return hasattr(platform, "window")
+    except Exception:
+        return False
+
+def _load_web_storage():
+    """Load high score from browser localStorage without touching the filesystem."""
+    try:
+        import platform
+        if hasattr(platform, "window") and hasattr(platform.window, "localStorage"):
+            ls = platform.window.localStorage
+            stored_score = ls.getItem("pyzerk_high_score")
+            stored_init = ls.getItem("pyzerk_high_initials")
+            if stored_score is not None:
+                globals.HIGH_SCORE = int(stored_score)
+                globals.HIGH_SCORE_INITIALS = str(stored_init if stored_init else "CPU")[:3].upper()
+                return True
+    except Exception:
+        pass
+    return False
+
+def _save_web_storage(score, initials):
+    """Save high score to browser localStorage without touching the filesystem."""
+    try:
+        import platform
+        if hasattr(platform, "window") and hasattr(platform.window, "localStorage"):
+            ls = platform.window.localStorage
+            ls.setItem("pyzerk_high_score", str(score))
+            ls.setItem("pyzerk_high_initials", str(initials))
+            return True
+    except Exception:
+        pass
+    return False
+
 def get_highscore_path():
-    """Return absolute path for persistent highscore storage."""
+    """Return absolute path for persistent highscore storage (desktop only)."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_dir, "highscore.json")
 
 def load_high_score():
-    """Load high score and initials from file, falling back to defaults."""
-    path = get_highscore_path()
-    if os.path.exists(path):
+    """Load high score and initials. Uses localStorage on web, file on desktop, with clean defaults."""
+    # 1. In web environment: strictly use browser localStorage (no file operations)
+    if is_web_env():
+        if _load_web_storage():
+            return globals.HIGH_SCORE, globals.HIGH_SCORE_INITIALS
+
+    # 2. Desktop environment: load from local highscore.json
+    if not is_web_env():
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                globals.HIGH_SCORE = int(data.get("score", 100))
-                globals.HIGH_SCORE_INITIALS = str(data.get("initials", "CPU"))[:3].upper()
-                return globals.HIGH_SCORE, globals.HIGH_SCORE_INITIALS
+            path = get_highscore_path()
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    globals.HIGH_SCORE = int(data.get("score", 100))
+                    globals.HIGH_SCORE_INITIALS = str(data.get("initials", "CPU"))[:3].upper()
+                    return globals.HIGH_SCORE, globals.HIGH_SCORE_INITIALS
         except Exception:
             pass
+
+    # 3. Default fallback
     globals.HIGH_SCORE = 100
     globals.HIGH_SCORE_INITIALS = "CPU"
     return globals.HIGH_SCORE, globals.HIGH_SCORE_INITIALS
 
 def save_high_score(score, initials):
-    """Save high score and 3-letter initials to memory and persistent storage."""
+    """Save high score and 3-letter initials. Uses localStorage on web, file on desktop."""
     clean_initials = "".join([c for c in initials.upper() if c.isalnum() or c in "!?-"])[:3]
     if len(clean_initials) == 0:
         clean_initials = "AAA"
@@ -37,8 +83,14 @@ def save_high_score(score, initials):
     globals.HIGH_SCORE = int(score)
     globals.HIGH_SCORE_INITIALS = clean_initials
     
-    path = get_highscore_path()
+    # 1. In web environment: strictly write to browser localStorage (NO file writes allowed)
+    if is_web_env():
+        _save_web_storage(globals.HIGH_SCORE, globals.HIGH_SCORE_INITIALS)
+        return globals.HIGH_SCORE, globals.HIGH_SCORE_INITIALS
+
+    # 2. Desktop environment: write to local highscore.json
     try:
+        path = get_highscore_path()
         data = {
             "score": globals.HIGH_SCORE,
             "initials": globals.HIGH_SCORE_INITIALS
@@ -47,6 +99,7 @@ def save_high_score(score, initials):
             json.dump(data, f, indent=2)
     except Exception:
         pass
+        
     return globals.HIGH_SCORE, globals.HIGH_SCORE_INITIALS
 
 def is_high_score(score):

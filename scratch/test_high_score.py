@@ -128,6 +128,54 @@ def run_tests():
     pygame.image.save(screen, os.path.join(os.path.dirname(__file__), "test_menu_highscore_render.png"))
     print("[PASS] Start Menu with High Score marquee rendered and saved.")
 
+    # 7. Test WebDeploy Environment (Zero File Writes, Uses browser localStorage)
+    print("\n--- Testing Webdeploy Environment (localStorage without file writes) ---")
+    import platform
+    class MockLocalStorage:
+        def __init__(self):
+            self.store = {}
+        def getItem(self, key):
+            return self.store.get(key, None)
+        def setItem(self, key, value):
+            self.store[key] = str(value)
+
+    class MockWindow:
+        def __init__(self):
+            self.localStorage = MockLocalStorage()
+
+    mock_win = MockWindow()
+    platform.window = mock_win
+    
+    assert highscore.is_web_env() is True, "is_web_env must detect platform.window"
+    
+    # Save high score in web mode
+    mtime_before = os.path.getmtime(hs_path) if os.path.exists(hs_path) else None
+    highscore.save_high_score(888, "WEB")
+    
+    assert mock_win.localStorage.getItem("pyzerk_high_score") == "888"
+    assert mock_win.localStorage.getItem("pyzerk_high_initials") == "WEB"
+    assert globals.HIGH_SCORE == 888
+    assert globals.HIGH_SCORE_INITIALS == "WEB"
+    
+    # Verify file was NOT touched
+    if mtime_before is not None:
+        assert os.path.getmtime(hs_path) == mtime_before, "highscore.json must not be modified in web mode"
+    print("[PASS] Web mode saved to browser localStorage with ZERO disk file writes.")
+
+    # Load high score in web mode
+    globals.HIGH_SCORE = 0
+    globals.HIGH_SCORE_INITIALS = ""
+    w_score, w_init = highscore.load_high_score()
+    assert w_score == 888 and w_init == "WEB"
+    print("[PASS] Web mode loaded directly from browser localStorage.")
+
+    # Cleanup mock
+    delattr(platform, "window")
+    assert highscore.is_web_env() is False, "Desktop mode restored"
+
+    # Restore default high score for repository clean state
+    highscore.save_high_score(100, "CPU")
+
     print("\nALL HIGH SCORE TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
 
 if __name__ == "__main__":
