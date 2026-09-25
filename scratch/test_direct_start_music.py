@@ -4,9 +4,16 @@ import os
 import globals
 import pygame
 
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+
 pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=4096)
 pygame.init()
-pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=4096)
+try:
+    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=4096)
+except Exception:
+    os.environ["SDL_AUDIODRIVER"] = "dummy"
+    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=4096)
 import sounds
 import main
 

@@ -112,39 +112,46 @@ This document tracks all features, architectural changes, audio updates, and dep
    - Full JSONL execution transcript: `~/.gemini/antigravity-cli/brain/<conversation-id>/.system_generated/logs/transcript.jsonl`
 
 
+### 7. Player Lives System, 10-Level Bonus Awards & HUD Status Bar
+* **Player Lives Management**:
+  * Added `INITIAL_LIVES = 3`, `LIVES = INITIAL_LIVES`, and `LEVELS_PASSED = 0` in `globals.py`.
+  * Initialized upon fresh game start in `main.py:startNewGame()`.
+* **Death & Respawn Handling**:
+  * Separated room generation into `setupRoom(level_num)` and `respawnCurrentLevel()`.
+  * When player is destroyed, `globals.LIVES` decrements by 1.
+  * If `globals.LIVES > 0`, activates `respawn_timer` (~1s pause) displaying `PLAYER DESTROYED! LIVES REMAINING: X`, and respawns player safely in the current level room without losing level progress or score.
+  * If `globals.LIVES == 0`, activates `game_over_timer` (~3s pause), plays `sounds.gameOverSound`, displays a centered retro modal with final score and levels passed, and returns cleanly to Start Menu upon expiration or ENTER keypress.
+* **10-Level Passing Bonus Award**:
+  * Tracked monotonic level clears via `globals.LEVELS_PASSED`.
+  * When `globals.LEVELS_PASSED % 10 == 0`, awards `globals.LIVES += 1` and triggers an on-screen celebratory banner: `★ 10 LEVELS PASSED! +1 EXTRA LIFE! ★`.
+* **HUD Status Top Bar**:
+  * Updated in-game top bar with `SCORE: X` (white, x=15), `LIVES: X` (green if >1, warning red if 1, x=200), `LEVEL: X` (cyan, x=370), and `[ENTER: MENU]` (yellow, x=655).
+  * Added lives explanation to Start Menu key controls panel in `menu.py`.
+* **Automated Verification**:
+  * Created `scratch/test_lives_system.py` verifying 3 initial lives, death decrements, respawn without level loss, Game Over trigger at 0 lives, +1 life at level 10 and 20 passed, and HUD rendering. (100% PASS).
+* **WebAssembly Bundle**:
+  * Rebuilt via Pygbag and synced `pyzerk.apk` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
-* **Start Menu System**: Fully implemented in `menu.py` and integrated into `main.py`.
-  * 1.0 Start Game (Enter key to play).
-  * 2.0 Music Volume Slider (live feedback & sample playback).
-  * 3.0 SFX Volume Slider (live feedback & sample playback).
-  * In-game Return to Menu via `ENTER` key.
-  * On-screen controls legend panel.
-* **Audio Engine & Channel Allocation**:
-  * Channel 0 exclusively reserved for background music in `sounds.py`.
-  * SFX strictly allocated to channels 1–15 via `playSound()`.
-  * Direct game start music verified and guaranteed without requiring prior volume adjustments.
-* **Star Trek Soundscape**:
-  * Backdrop: Clean, unwatermarked *Envisioning Science Fiction* ambient bed (zero 60 Hz hum, zero vocal watermarks).
-  * Layered FX: 8 verified clean bridge sound effects (`trek-communicator`, `science-fiction-space-shu`, `bridge_1`, `bridge_56`, `bridge_57`, `bridge_74`, `bridge_101`, `bridge_116`).
-  * 64.0-second seamless loop with exact 0.0 seam boundary error.
-  * Formats: `sounds/BMUSIC.ogg` (803 KB Vorbis OGG) and `sounds/BMUSIC.wav` (11.2 MB PCM 16-bit).
-  * Original arcade theme backed up as `sounds/BMUSIC_backup.ogg`.
-* **WebAssembly Deployment**:
-  * Rebuilt via Pygbag (`build/web/`).
-  * Synced `pyzerk.apk` and `pyzerk.tar.gz` to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **Automated Tests**:
+* **Lives System & Status Bar**:
+  * 3 starting lives, respawn pause on death preserving room progress, and Game Over sequence when out of lives.
+  * +1 extra life awarded every 10 levels passed with celebratory on-screen banner.
+  * In-game top status bar displaying SCORE, LIVES (with color indicator), LEVEL, and MENU hint.
+* **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, and updated controls legend explaining the lives mechanic.
+* **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
+* **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+* **All Test Suites Passing**:
+  * `scratch/test_lives_system.py`: PASSED (100%)
+  * `scratch/test_game.py`: PASSED (100%)
   * `scratch/test_start_menu_features.py`: PASSED (100%)
   * `scratch/test_interactive_flow.py`: PASSED (100%)
   * `scratch/test_direct_start_music.py`: PASSED (100%)
-* **Git Status**:
-  * Branch: `agy_1`
-  * Clean commit state ready.
 
-### Next Actions Upon Reconnection
-1. Verify updated permission behavior with your new `~/.gemini/config/config.json`.
-2. Push branch `agy_1` to GitHub if desired (`git push origin agy_1`).
-3. Proceed with any additional pyZerk features or web enhancements.
+### Next Steps
+1. Commit updated files to branch `agy_1`.
+2. Push branch `agy_1` to GitHub.

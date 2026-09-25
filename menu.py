@@ -361,8 +361,8 @@ class Class_StartMenu:
         controls = [
             ("ARROW KEYS:", "Move / Run character in 8 directions (Up, Down, Left, Right, Diagonals)"),
             ("LEFT CTRL:",  "HOLD Left Ctrl + Arrow Keys to aim laser gun and shoot"),
+            ("LIVES SYSTEM:", "Start with 3 lives. Pass every 10 levels to earn +1 extra life!"),
             ("ENTER KEY:",  "Return back to Main Menu anytime during gameplay"),
-            ("ESCAPE:",     "Quit Game / Exit Pyzerk"),
             ("MENU KEYS:",  "UP/DOWN = Select option | LEFT/RIGHT = Volume | ENTER = Confirm / Sample"),
             ("OBJECTIVE:",  "Eliminate all robots or reach maze exits! Beware of bouncing OTTO!")
         ]

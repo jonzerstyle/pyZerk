@@ -57,30 +57,41 @@ except Exception:
 maxLevels = 50
 MAX_OTTOS = 1
 
-def startNewLevel():
-    sounds.playSound(sounds.nextLevelSound)
+def setupRoom(level_num):
+    """Set up objects, player, robots, and maze for a level room."""
     globals.OTTOTIMER = otto.ottoTimerReload 
-    globals.LEVEL += 1
-    # make level wrap back to zero
-    if globals.LEVEL > maxLevels:
-        globals.LEVEL = 0
-    #destroy all the objects
+    # destroy all existing objects
     for a in globals.OBJECTS:
         a.kill()
-    #start a new level
+    # spawn player and robots
     pList = misc.distPoints(globals.SCREENSIZE, globals.NUM_OF_ROBOTS // 4, 4)
     player.Class_Player(player.player_start_pos, [0,0])
     for a in range(globals.NUM_OF_ROBOTS):
         robots.Class_Robot(pList[a], [0,0])
-    #level up robots
+    # level up robots to match current level
     for a in globals.ROBOTS.sprites():
-        a.levelUp(globals.LEVEL)
+        a.levelUp(level_num)
     maze.Class_Maze(globals.SCREENSIZE)
 
+def startNewLevel():
+    """Advance to the next level and setup the room."""
+    sounds.playSound(sounds.nextLevelSound)
+    globals.LEVEL += 1
+    # make level wrap back to zero
+    if globals.LEVEL > maxLevels:
+        globals.LEVEL = 0
+    setupRoom(globals.LEVEL)
+
+def respawnCurrentLevel():
+    """Respawn the player and reset the room for the current level without advancing."""
+    setupRoom(globals.LEVEL)
+
 def startNewGame():
-    """Start a fresh new game from Level 1, resetting score and level."""
+    """Start a fresh new game from Level 1, resetting score, lives, and level."""
     globals.SCORE = 0
     globals.LEVEL = 0
+    globals.LIVES = globals.INITIAL_LIVES
+    globals.LEVELS_PASSED = 0
     for a in globals.OBJECTS:
         a.kill()
     startNewLevel()
@@ -168,6 +179,12 @@ async def main():
     start_menu = menu.Class_StartMenu()
     globals.MENUON = True
     hud_font = pygame.font.Font(None, 24)
+    go_font = pygame.font.Font(None, 54)
+    banner_font = pygame.font.Font(None, 28)
+
+    respawn_timer = 0
+    game_over_timer = 0
+    bonus_life_timer = 0
 
     #main loop
     while keybo.running == True:
@@ -186,6 +203,9 @@ async def main():
             for event in events:
                 action = start_menu.handle_event(event)
                 if action == "START_GAME":
+                    respawn_timer = 0
+                    game_over_timer = 0
+                    bonus_life_timer = 0
                     startNewGame()
                     break
                 elif action == "QUIT":
@@ -202,21 +222,63 @@ async def main():
         # Keyboard processing
         keybo.run(globals.SCREENSIZE, screen, globals.SCREEN_BACKCOLOR, mainContainerC, events=events)
         if keybo.return_to_menu:
+            respawn_timer = 0
+            game_over_timer = 0
+            bonus_life_timer = 0
             returnToMenu()
             continue
 
-        # Update object movement
-        updateMovement(mainContainerC)
+        if game_over_timer > 0:
+            for event in events:
+                if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                    game_over_timer = 0
+                    returnToMenu()
+                    break
+            if globals.MENUON:
+                continue
+            game_over_timer -= 1
+            if game_over_timer == 0:
+                returnToMenu()
+                continue
+        elif respawn_timer > 0:
+            respawn_timer -= 1
+            if respawn_timer == 0:
+                respawnCurrentLevel()
+        else:
+            # Update object movement
+            updateMovement(mainContainerC)
 
-        # Look for collisions 
-        detCollisions(keybo)
+            # Look for collisions 
+            detCollisions(keybo)
 
-        # Tick off here once per second
-        genTickTimer = oneSecTimer(genTickTimer)
+            # Tick off here once per second
+            genTickTimer = oneSecTimer(genTickTimer)
 
-        # Update objects
-        for a in globals.OBJECTS:
-            a.update()
+            # Update objects
+            for a in globals.OBJECTS:
+                a.update()
+
+            if bonus_life_timer > 0:
+                bonus_life_timer -= 1
+
+            # Check to see if player died or all robots destroyed
+            if len(globals.PLAYER.sprites()) == 0:
+                # Player lost a life!
+                globals.LIVES -= 1
+                if globals.LIVES > 0:
+                    respawn_timer = 30  # ~1 second respawn delay
+                else:
+                    game_over_timer = 90  # ~3 seconds Game Over display
+                    if globals.SOUNDS_ON:
+                        sounds.playSound(sounds.gameOverSound)
+            elif len(globals.ROBOTS.sprites()) == 0:
+                # Level cleared!
+                globals.LEVELS_PASSED += 1
+                # Award one life back every ten levels passed
+                if globals.LEVELS_PASSED % 10 == 0:
+                    globals.LIVES += 1
+                    bonus_life_timer = 60  # ~2 seconds banner
+                startNewLevel()
 
         # Blank the screen
         screen.fill(globals.SCREEN_BACKCOLOR)
@@ -225,22 +287,57 @@ async def main():
         for a in globals.OBJECTS.sprites():
             dirtyrects += a.draw(screen)
 
-        # Draw in-game HUD
+        # Draw in-game HUD top status bar
         score_surf = hud_font.render(f"SCORE: {globals.SCORE}", True, globals.WHITE)
+        lives_color = (0, 255, 100) if globals.LIVES > 1 else (255, 60, 60)
+        lives_surf = hud_font.render(f"LIVES: {globals.LIVES}", True, lives_color)
         level_surf = hud_font.render(f"LEVEL: {globals.LEVEL}", True, globals.CYAN)
         menu_hint_surf = hud_font.render("[ENTER: MENU]", True, globals.YELLOW)
         dirtyrects.append(screen.blit(score_surf, (15, 8)))
-        dirtyrects.append(screen.blit(level_surf, (360, 8)))
-        dirtyrects.append(screen.blit(menu_hint_surf, (670, 8)))
+        dirtyrects.append(screen.blit(lives_surf, (200, 8)))
+        dirtyrects.append(screen.blit(level_surf, (370, 8)))
+        dirtyrects.append(screen.blit(menu_hint_surf, (655, 8)))
+
+        # Draw 10-level bonus life celebration banner
+        if bonus_life_timer > 0 and game_over_timer == 0 and respawn_timer == 0:
+            bonus_surf = banner_font.render("★ 10 LEVELS PASSED! +1 EXTRA LIFE! ★", True, (255, 230, 0))
+            bx = (globals.SCREENSIZE[0] - bonus_surf.get_width()) // 2
+            bg_rect = pygame.Rect(bx - 12, 34, bonus_surf.get_width() + 24, bonus_surf.get_height() + 6)
+            pygame.draw.rect(screen, (10, 25, 15), bg_rect)
+            pygame.draw.rect(screen, (255, 220, 0), bg_rect, 1)
+            dirtyrects.append(screen.blit(bonus_surf, (bx, 37)))
+
+        # Draw respawn notification overlay if player died but still has lives
+        if respawn_timer > 0:
+            respawn_text = f"PLAYER DESTROYED!  LIVES REMAINING: {globals.LIVES}"
+            respawn_surf = banner_font.render(respawn_text, True, (255, 90, 90))
+            rx = (globals.SCREENSIZE[0] - respawn_surf.get_width()) // 2
+            ry = (globals.SCREENSIZE[1] - respawn_surf.get_height()) // 2
+            bg_rect = pygame.Rect(rx - 16, ry - 10, respawn_surf.get_width() + 32, respawn_surf.get_height() + 20)
+            pygame.draw.rect(screen, (25, 10, 10), bg_rect)
+            pygame.draw.rect(screen, (255, 60, 60), bg_rect, 2)
+            dirtyrects.append(screen.blit(respawn_surf, (rx, ry)))
+
+        # Draw Game Over modal overlay if out of lives
+        if game_over_timer > 0:
+            panel_w, panel_h = 500, 180
+            px = (globals.SCREENSIZE[0] - panel_w) // 2
+            py = (globals.SCREENSIZE[1] - panel_h) // 2
+            panel_rect = pygame.Rect(px, py, panel_w, panel_h)
+            pygame.draw.rect(screen, (20, 10, 15), panel_rect)
+            pygame.draw.rect(screen, (255, 50, 50), panel_rect, 3)
+            
+            go_surf = go_font.render("GAME OVER", True, (255, 40, 40))
+            score_summary = hud_font.render(f"FINAL SCORE: {globals.SCORE}   |   LEVELS PASSED: {globals.LEVELS_PASSED}", True, globals.WHITE)
+            hint_summary = hud_font.render("[PRESS ENTER TO RETURN TO MENU]", True, globals.YELLOW)
+            
+            dirtyrects.append(screen.blit(go_surf, go_surf.get_rect(center=(px + panel_w // 2, py + 45))))
+            dirtyrects.append(screen.blit(score_summary, score_summary.get_rect(center=(px + panel_w // 2, py + 105))))
+            dirtyrects.append(screen.blit(hint_summary, hint_summary.get_rect(center=(px + panel_w // 2, py + 145))))
 
         # Update the display
         pygame.display.flip()
         olddirtyrects = dirtyrects
-
-        # Check to see if all robots destroyed or player destroyed to go to next level
-        if globals.MENUON == False:
-            if (len(globals.PLAYER.sprites()) == 0) or (len(globals.ROBOTS.sprites()) == 0):
-                startNewLevel()
 
         await asyncio.sleep(0)
 
