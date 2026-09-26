@@ -145,11 +145,11 @@ def startNewLevel(entry_side=None, maze_instance=None):
 
 def respawnCurrentLevel():
     """Respawn the player and reset the room for the current level without advancing."""
-    globals.ROBOT_STARTLE_TIMER = 0
     setupRoom(globals.LEVEL, entry_side=current_entry_side)
+    globals.ROBOT_STARTLE_TIMER = 5 * globals.FRAME_RATE_SETTING
 
 def startNewGame():
-    """Start a fresh new game from Level 1, resetting score, lives, level, and loop counter."""
+    """Start a fresh new game from Level 1, resetting score, lives, level, loop counter, and startle timer."""
     global current_entry_side
     current_entry_side = None
     highscore.load_high_score()
@@ -158,21 +158,36 @@ def startNewGame():
     globals.LEVEL_LOOP = 0
     globals.LIVES = globals.INITIAL_LIVES
     globals.LEVELS_PASSED = 0
-    globals.ROBOT_STARTLE_TIMER = 0
     globals.PENDING_EXIT = None
     for a in globals.OBJECTS:
         a.kill()
     startNewLevel()
+    # 5-second countdown before robots are allowed to fire when game first starts
+    globals.ROBOT_STARTLE_TIMER = 5 * globals.FRAME_RATE_SETTING
+    globals.GAME_IN_PROGRESS = True
     globals.MENUON = False
     sounds.start_game_music()
 
-def returnToMenu():
-    """Return to start menu, halting gameplay entities while keeping music active."""
+def pauseGame(start_menu_obj=None, container_obj=None):
+    """Pause active gameplay and transition to the Start Menu, preserving all entities and game state."""
     globals.MENUON = True
+    if start_menu_obj:
+        start_menu_obj.selected_index = 1  # Highlight RESUME GAME
+    if container_obj:
+        container_obj.addItem("player_movement", movement.dirEnum.NONE)
+        container_obj.addItem("player_fire", "ceasefire")
+
+def returnToMenu(start_menu_obj=None):
+    """Return to start menu after game ends, halting gameplay entities and clearing active session."""
+    globals.MENUON = True
+    globals.GAME_IN_PROGRESS = False
     globals.ROBOT_STARTLE_TIMER = 0
     globals.PENDING_EXIT = None
+    if start_menu_obj:
+        start_menu_obj.selected_index = 0
     for a in globals.OBJECTS:
         a.kill()
+
 
 def updateMovement(main_containerObj):
     for a in globals.PLAYER.sprites():
@@ -323,6 +338,11 @@ async def main():
                     loop_banner_timer = 0
                     startNewGame()
                     break
+                elif action == "RESUME_GAME":
+                    if globals.GAME_IN_PROGRESS:
+                        globals.MENUON = False
+                        sounds.start_game_music()
+                        break
                 elif action == "QUIT":
                     if not highscore.is_web_env():
                         keybo.running = False
@@ -357,11 +377,10 @@ async def main():
         # SCROLLING MAZE TRANSITION MODE
         if transition_active:
             for event in events:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    transition_active = False
-                    returnToMenu()
+                if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
+                    pauseGame(start_menu, mainContainerC)
                     break
-            if not transition_active:
+            if globals.MENUON:
                 continue
 
             transition_frame += 1
@@ -414,24 +433,20 @@ async def main():
             if highscore.is_high_score(globals.SCORE):
                 high_score_entry = highscore.Class_HighScoreEntry(globals.SCORE)
                 continue
-            respawn_timer = 0
-            game_over_timer = 0
-            bonus_life_timer = 0
-            loop_banner_timer = 0
-            returnToMenu()
+            pauseGame(start_menu, mainContainerC)
             continue
 
         if game_over_timer > 0:
             for event in events:
                 if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
                     game_over_timer = 0
-                    returnToMenu()
+                    returnToMenu(start_menu)
                     break
             if globals.MENUON:
                 continue
             game_over_timer -= 1
             if game_over_timer == 0:
-                returnToMenu()
+                returnToMenu(start_menu)
                 continue
         elif respawn_timer > 0:
             respawn_timer -= 1

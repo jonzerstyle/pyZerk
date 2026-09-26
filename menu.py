@@ -34,7 +34,9 @@ class Class_StartMenu:
         self.BAR_FILL = (0, 230, 100)
         self.BAR_BORDER = (200, 200, 200)
         self.SAMPLE_ACTIVE_COLOR = (255, 100, 255)
-        
+        self.DISABLED_COLOR = (110, 110, 110)
+        self.DISABLED_HINT_COLOR = (85, 85, 85)
+
         # Fonts (Pygame default font ensures universal compatibility)
         self.font_title = pygame.font.Font(None, 52)
         self.font_subtitle = pygame.font.Font(None, 22)
@@ -54,6 +56,15 @@ class Class_StartMenu:
         self.last_press_time = 0
         self.last_press_button = ""
 
+    @property
+    def has_game_in_progress(self):
+        return globals.GAME_IN_PROGRESS
+
+    @has_game_in_progress.setter
+    def has_game_in_progress(self, val):
+        globals.GAME_IN_PROGRESS = val
+
+
     def handle_event(self, event):
         """Handle a single pygame event. Returns action string or None."""
         if event.type == pygame.QUIT:
@@ -63,12 +74,32 @@ class Class_StartMenu:
             if event.key == pygame.K_ESCAPE:
                 return "QUIT" if not highscore.is_web_env() else None
             
-            # Arrow key / WASD navigation
+            # Arrow key / WASD navigation (4 menu items, skipping disabled Resume when no game in progress)
             elif event.key in (pygame.K_UP, pygame.K_w):
-                self.selected_index = (self.selected_index - 1) % 3
+                if self.has_game_in_progress:
+                    self.selected_index = (self.selected_index - 1) % 4
+                else:
+                    if self.selected_index == 2:
+                        self.selected_index = 0
+                    elif self.selected_index == 0:
+                        self.selected_index = 3
+                    else:
+                        self.selected_index = (self.selected_index - 1) % 4
+                        if self.selected_index == 1:
+                            self.selected_index = 0
                 sounds.play_nav_sound()
             elif event.key in (pygame.K_DOWN, pygame.K_s):
-                self.selected_index = (self.selected_index + 1) % 3
+                if self.has_game_in_progress:
+                    self.selected_index = (self.selected_index + 1) % 4
+                else:
+                    if self.selected_index == 0:
+                        self.selected_index = 2
+                    elif self.selected_index == 3:
+                        self.selected_index = 0
+                    else:
+                        self.selected_index = (self.selected_index + 1) % 4
+                        if self.selected_index == 1:
+                            self.selected_index = 2
                 sounds.play_nav_sound()
             
             # Number keys quick select
@@ -76,23 +107,27 @@ class Class_StartMenu:
                 self.selected_index = 0
                 return "START_GAME"
             elif event.key in (pygame.K_2, pygame.K_KP2):
-                self.selected_index = 1
-                self.play_music_sample()
+                if self.has_game_in_progress:
+                    self.selected_index = 1
+                    return "RESUME_GAME"
             elif event.key in (pygame.K_3, pygame.K_KP3):
                 self.selected_index = 2
+                self.play_music_sample()
+            elif event.key in (pygame.K_4, pygame.K_KP4):
+                self.selected_index = 3
                 self.play_sfx_sample()
             
             # Left / Right volume adjustments
             elif event.key in (pygame.K_LEFT, pygame.K_a):
                 self.last_press_time = pygame.time.get_ticks() + 180
                 self.last_press_button = "minus"
-                if self.selected_index == 1:
+                if self.selected_index == 2:
                     new_vol = round(max(0.0, sounds.get_music_volume() - 0.1), 1)
                     sounds.set_music_volume(new_vol)
                     sounds.play_nav_sound()
                     self.sample_active_until = pygame.time.get_ticks() + 1500
                     self.sample_type = "music"
-                elif self.selected_index == 2:
+                elif self.selected_index == 3:
                     new_vol = round(max(0.0, sounds.get_sfx_volume() - 0.1), 1)
                     sounds.set_sfx_volume(new_vol)
                     sounds.play_sfx_sample()
@@ -102,13 +137,13 @@ class Class_StartMenu:
             elif event.key in (pygame.K_RIGHT, pygame.K_d):
                 self.last_press_time = pygame.time.get_ticks() + 180
                 self.last_press_button = "plus"
-                if self.selected_index == 1:
+                if self.selected_index == 2:
                     new_vol = round(min(1.0, sounds.get_music_volume() + 0.1), 1)
                     sounds.set_music_volume(new_vol)
                     sounds.play_nav_sound()
                     self.sample_active_until = pygame.time.get_ticks() + 1500
                     self.sample_type = "music"
-                elif self.selected_index == 2:
+                elif self.selected_index == 3:
                     new_vol = round(min(1.0, sounds.get_sfx_volume() + 0.1), 1)
                     sounds.set_sfx_volume(new_vol)
                     sounds.play_sfx_sample()
@@ -120,15 +155,20 @@ class Class_StartMenu:
                 if self.selected_index == 0:
                     return "START_GAME"
                 elif self.selected_index == 1:
+                    if self.has_game_in_progress:
+                        return "RESUME_GAME"
+                elif self.selected_index == 2:
                     self.play_music_sample()
                     sounds.play_nav_sound()
-                elif self.selected_index == 2:
+                elif self.selected_index == 3:
                     self.play_sfx_sample()
 
         elif event.type == pygame.MOUSEMOTION:
             pos = event.pos
             for idx, r in enumerate(self.item_rects):
                 if r.collidepoint(pos):
+                    if idx == 1 and not self.has_game_in_progress:
+                        continue
                     self.selected_index = idx
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -136,8 +176,12 @@ class Class_StartMenu:
             if len(self.item_rects) > 0 and self.item_rects[0].collidepoint(pos):
                 self.selected_index = 0
                 return "START_GAME"
+            elif len(self.item_rects) > 1 and self.item_rects[1].collidepoint(pos):
+                if self.has_game_in_progress:
+                    self.selected_index = 1
+                    return "RESUME_GAME"
             elif self.vol_music_minus_rect and self.vol_music_minus_rect.collidepoint(pos):
-                self.selected_index = 1
+                self.selected_index = 2
                 new_vol = round(max(0.0, sounds.get_music_volume() - 0.1), 1)
                 sounds.set_music_volume(new_vol)
                 sounds.play_nav_sound()
@@ -146,7 +190,7 @@ class Class_StartMenu:
                 self.sample_active_until = pygame.time.get_ticks() + 1500
                 self.sample_type = "music"
             elif self.vol_music_plus_rect and self.vol_music_plus_rect.collidepoint(pos):
-                self.selected_index = 1
+                self.selected_index = 2
                 new_vol = round(min(1.0, sounds.get_music_volume() + 0.1), 1)
                 sounds.set_music_volume(new_vol)
                 sounds.play_nav_sound()
@@ -155,11 +199,11 @@ class Class_StartMenu:
                 self.sample_active_until = pygame.time.get_ticks() + 1500
                 self.sample_type = "music"
             elif self.vol_music_sample_rect and self.vol_music_sample_rect.collidepoint(pos):
-                self.selected_index = 1
+                self.selected_index = 2
                 self.play_music_sample()
                 sounds.play_nav_sound()
             elif self.vol_sfx_minus_rect and self.vol_sfx_minus_rect.collidepoint(pos):
-                self.selected_index = 2
+                self.selected_index = 3
                 new_vol = round(max(0.0, sounds.get_sfx_volume() - 0.1), 1)
                 sounds.set_sfx_volume(new_vol)
                 sounds.play_sfx_sample()
@@ -168,7 +212,7 @@ class Class_StartMenu:
                 self.sample_active_until = pygame.time.get_ticks() + 1500
                 self.sample_type = "sfx"
             elif self.vol_sfx_plus_rect and self.vol_sfx_plus_rect.collidepoint(pos):
-                self.selected_index = 2
+                self.selected_index = 3
                 new_vol = round(min(1.0, sounds.get_sfx_volume() + 0.1), 1)
                 sounds.set_sfx_volume(new_vol)
                 sounds.play_sfx_sample()
@@ -177,7 +221,7 @@ class Class_StartMenu:
                 self.sample_active_until = pygame.time.get_ticks() + 1500
                 self.sample_type = "sfx"
             elif self.vol_sfx_sample_rect and self.vol_sfx_sample_rect.collidepoint(pos):
-                self.selected_index = 2
+                self.selected_index = 3
                 self.play_sfx_sample()
 
         return None
@@ -222,8 +266,8 @@ class Class_StartMenu:
         
         # 2. Menu Items
         self.item_rects = []
-        base_y = 100
-        row_height = 40
+        base_y = 96
+        row_height = 34
         
         # Item 0: 1.0 START A GAME
         y0 = base_y
@@ -231,46 +275,69 @@ class Class_StartMenu:
         col_0 = self.SELECT_COLOR if is_sel_0 else self.TEXT_COLOR
         prefix_0 = "> " if is_sel_0 else "  "
         text_0 = self.font_menu.render(f"{prefix_0}1.0  START A GAME", True, col_0)
-        r0 = surface.blit(text_0, (50, y0))
-        self.item_rects.append(pygame.Rect(45, y0 - 4, 300, 32))
+        surface.blit(text_0, (50, y0))
+        self.item_rects.append(pygame.Rect(45, y0 - 3, 240, 28))
         if is_sel_0:
-            prompt_0 = self.font_small.render("[Press ENTER to Play]", True, (0, 255, 200))
-            surface.blit(prompt_0, (320, y0 + 4))
+            prompt_0 = self.font_small.render("[Press ENTER to Play New Game]", True, (0, 255, 200))
+            surface.blit(prompt_0, (300, y0 + 4))
 
-        # Item 1: 2.0 SET MUSIC VOLUME
+        # Item 1: 2.0 RESUME GAME (or Grayed Out if no game in progress)
         y1 = base_y + row_height
         is_sel_1 = (self.selected_index == 1)
-        col_1 = self.SELECT_COLOR if is_sel_1 else self.TEXT_COLOR
-        prefix_1 = "> " if is_sel_1 else "  "
-        text_1 = self.font_menu.render(f"{prefix_1}2.0  SET MUSIC VOLUME", True, col_1)
-        surface.blit(text_1, (50, y1))
-        self.item_rects.append(pygame.Rect(45, y1 - 4, 310, 32))
-        
-        # Music Volume Slider & Buttons
-        music_vol = sounds.get_music_volume()
-        self.vol_music_minus_rect, self.vol_music_plus_rect, self.vol_music_sample_rect = \
-            self._draw_volume_control(surface, 360, y1 + 2, music_vol, is_sel_1,
-                                     is_sample_active and self.sample_type == "music", "music")
+        if self.has_game_in_progress:
+            col_1 = self.SELECT_COLOR if is_sel_1 else self.TEXT_COLOR
+            prefix_1 = "> " if is_sel_1 else "  "
+            text_1 = self.font_menu.render(f"{prefix_1}2.0  RESUME GAME", True, col_1)
+            surface.blit(text_1, (50, y1))
+            self.item_rects.append(pygame.Rect(45, y1 - 3, 240, 28))
+            if is_sel_1:
+                prompt_1 = self.font_small.render(f"[Press ENTER to Resume - Level {globals.LEVEL}]", True, (0, 255, 200))
+                surface.blit(prompt_1, (300, y1 + 4))
+            else:
+                info_1 = self.font_small.render(f"[PAUSED - Level {globals.LEVEL} | Score: {globals.SCORE} | Lives: {globals.LIVES}]", True, (0, 180, 160))
+                surface.blit(info_1, (300, y1 + 4))
+        else:
+            col_gray = self.DISABLED_COLOR
+            text_1 = self.font_menu.render("    2.0  RESUME GAME", True, col_gray)
+            surface.blit(text_1, (50, y1))
+            self.item_rects.append(pygame.Rect(45, y1 - 3, 240, 28))
+            gray_hint = self.font_small.render("[No Prior Game in Progress]", True, self.DISABLED_HINT_COLOR)
+            surface.blit(gray_hint, (300, y1 + 4))
 
-        # Item 2: 3.0 SET OTHER SOUNDS VOLUME
+        # Item 2: 3.0 SET MUSIC VOLUME
         y2 = base_y + row_height * 2
         is_sel_2 = (self.selected_index == 2)
         col_2 = self.SELECT_COLOR if is_sel_2 else self.TEXT_COLOR
         prefix_2 = "> " if is_sel_2 else "  "
-        text_2 = self.font_menu.render(f"{prefix_2}3.0  SET OTHER SOUNDS VOLUME", True, col_2)
+        text_2 = self.font_menu.render(f"{prefix_2}3.0  SET MUSIC VOLUME", True, col_2)
         surface.blit(text_2, (50, y2))
-        self.item_rects.append(pygame.Rect(45, y2 - 4, 310, 32))
+        self.item_rects.append(pygame.Rect(45, y2 - 3, 310, 28))
+        
+        # Music Volume Slider & Buttons
+        music_vol = sounds.get_music_volume()
+        self.vol_music_minus_rect, self.vol_music_plus_rect, self.vol_music_sample_rect = \
+            self._draw_volume_control(surface, 360, y2 + 2, music_vol, is_sel_2,
+                                     is_sample_active and self.sample_type == "music", "music")
+
+        # Item 3: 4.0 SET OTHER SOUNDS VOLUME
+        y3 = base_y + row_height * 3
+        is_sel_3 = (self.selected_index == 3)
+        col_3 = self.SELECT_COLOR if is_sel_3 else self.TEXT_COLOR
+        prefix_3 = "> " if is_sel_3 else "  "
+        text_3 = self.font_menu.render(f"{prefix_3}4.0  SET OTHER SOUNDS VOLUME", True, col_3)
+        surface.blit(text_3, (50, y3))
+        self.item_rects.append(pygame.Rect(45, y3 - 3, 310, 28))
         
         # SFX Volume Slider & Buttons
         sfx_vol = sounds.get_sfx_volume()
         self.vol_sfx_minus_rect, self.vol_sfx_plus_rect, self.vol_sfx_sample_rect = \
-            self._draw_volume_control(surface, 360, y2 + 2, sfx_vol, is_sel_2,
+            self._draw_volume_control(surface, 360, y3 + 2, sfx_vol, is_sel_3,
                                      is_sample_active and self.sample_type == "sfx", "sfx")
 
         # Menu navigation hint
-        nav_hint = "NAVIGATE: UP/DOWN | ADJUST: LEFT/RIGHT | SELECT / SAMPLE: ENTER | QUICK: 1, 2, 3"
+        nav_hint = "NAVIGATE: UP/DOWN | ADJUST: LEFT/RIGHT | SELECT / SAMPLE: ENTER | QUICK: 1, 2, 3, 4"
         hint_surf = self.font_small.render(nav_hint, True, self.HINT_COLOR)
-        surface.blit(hint_surf, hint_surf.get_rect(center=(sw // 2, 230)))
+        surface.blit(hint_surf, hint_surf.get_rect(center=(sw // 2, 233)))
 
         # 3. Key Controls Panel
         self._draw_controls_panel(surface, 40, 248, sw - 80, 222)
@@ -368,7 +435,7 @@ class Class_StartMenu:
             ("ARROW KEYS:", "Move / Run character in 8 directions (Up, Down, Left, Right, Diagonals)"),
             ("LEFT CTRL:",  "HOLD Left Ctrl + Arrow Keys to aim laser gun and shoot"),
             ("LIVES SYSTEM:", "Start with 3 lives. Pass every 10 levels to earn +1 extra life!"),
-            ("ESC / ENTER:", "Pause and return back to Main Menu anytime during gameplay"),
+            ("ESC / ENTER:", "Pause gameplay to open Menu; select Resume Game to continue anytime"),
             ("MENU KEYS:",  "UP/DOWN = Select option | LEFT/RIGHT = Volume | ENTER = Confirm / Sample"),
             ("OBJECTIVE:",  "Eliminate all robots or reach maze exits! Beware of bouncing OTTO!")
         ]

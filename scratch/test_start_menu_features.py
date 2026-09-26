@@ -28,7 +28,7 @@ def test_menu_initialization():
 def test_music_volume_and_sample():
     print("Testing Music Volume and Sample Output...")
     start_menu = menu.Class_StartMenu()
-    start_menu.selected_index = 1
+    start_menu.selected_index = 2
     
     # Test Left Arrow (Decrease volume)
     sounds.set_music_volume(0.7)
@@ -52,7 +52,7 @@ def test_music_volume_and_sample():
 def test_sfx_volume_and_sample():
     print("Testing SFX Volume and Sample Output...")
     start_menu = menu.Class_StartMenu()
-    start_menu.selected_index = 2
+    start_menu.selected_index = 3
     
     # Test Left Arrow (Decrease SFX volume)
     sounds.set_sfx_volume(0.7)
@@ -74,19 +74,30 @@ def test_sfx_volume_and_sample():
     print("  -> SFX volume and sample output test passed!")
 
 def test_quick_keys():
-    print("Testing Quick Keys [1], [2], [3]...")
+    print("Testing Quick Keys [1], [2], [3], [4]...")
     start_menu = menu.Class_StartMenu()
     
-    # Key '2' selects music volume and plays sample
+    # Key '2' does not resume when no game in progress
+    globals.GAME_IN_PROGRESS = False
     ev_2 = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)
-    start_menu.handle_event(ev_2)
-    assert start_menu.selected_index == 1
-    assert start_menu.sample_type == "music"
+    assert start_menu.handle_event(ev_2) is None
     
-    # Key '3' selects SFX volume and plays sample
+    # Key '2' resumes when game is in progress
+    globals.GAME_IN_PROGRESS = True
+    assert start_menu.handle_event(ev_2) == "RESUME_GAME"
+    assert start_menu.selected_index == 1
+    globals.GAME_IN_PROGRESS = False
+    
+    # Key '3' selects music volume and plays sample
     ev_3 = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)
     start_menu.handle_event(ev_3)
     assert start_menu.selected_index == 2
+    assert start_menu.sample_type == "music"
+    
+    # Key '4' selects SFX volume and plays sample
+    ev_4 = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_4)
+    start_menu.handle_event(ev_4)
+    assert start_menu.selected_index == 3
     assert start_menu.sample_type == "sfx"
     
     # Key '1' triggers start game

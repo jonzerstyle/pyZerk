@@ -34,7 +34,9 @@ WALLS = pygame.sprite.Group()
 EXITS = pygame.sprite.Group()
 TEXT = pygame.sprite.Group()
 
-# Escape routes & robot startle state
+# Escape routes, game state & robot startle state
+MENUON = True
+GAME_IN_PROGRESS = False
 ROBOT_STARTLE_TIMER = 0
 PENDING_EXIT = None
 

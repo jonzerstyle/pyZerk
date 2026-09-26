@@ -322,11 +322,49 @@ This document tracks all features, architectural changes, audio updates, and dep
   * **WASM Rebuild**:
     * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag and synchronized to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
 
+### 16. Game First Start 5-Second Startle Countdown & Start Menu "Resume Game" Option
+* **Features Implemented**:
+  * **Game First Start 5-Second Startle Window ([`main.py`](file:///home/mjones/agy/pyzerk/main.py), [`globals.py`](file:///home/mjones/agy/pyzerk/globals.py), [`bullets.py`](file:///home/mjones/agy/pyzerk/bullets.py))**:
+    * When a game first launches via `startNewGame()`, `globals.ROBOT_STARTLE_TIMER` is initialized to 150 frames (5 seconds at 30 FPS).
+    * `respawnCurrentLevel()` also initializes the 5-second countdown upon respawn after player death.
+    * Robot firing suppression: `bullets.py` prevents all robot bullet generation while `globals.ROBOT_STARTLE_TIMER > 0`.
+    * On-screen status banner: Displays `*** ROBOTS STARTLED! NO FIRING (Xs) ***` dynamically updating the countdown in seconds, identical to the new maze entrance banner.
+    * Safe positioning: Banner automatically moves to the bottom of the screen if the player spawns or enters at the top edge (`y < 120`), guaranteeing an unobstructed view.
+  * **Start Menu "2.0 RESUME GAME" Option ([`menu.py`](file:///home/mjones/agy/pyzerk/menu.py), [`main.py`](file:///home/mjones/agy/pyzerk/main.py))**:
+    * Re-indexed Start Menu into 4 items:
+      * `0`: `1.0  START A GAME`
+      * `1`: `2.0  RESUME GAME` (context-aware: active or grayed out)
+      * `2`: `3.0  SET MUSIC VOLUME`
+      * `3`: `4.0  SET OTHER SOUNDS VOLUME`
+    * **Disabled / Grayed Out State (`globals.GAME_IN_PROGRESS == False`)**:
+      * Displayed in muted dark gray: `2.0  RESUME GAME  [No Prior Game in Progress]`.
+      * Up/Down/W/S arrow navigation automatically skips index 1.
+      * Mouse click on the row is suppressed.
+      * Quick key `[2]` is ignored.
+    * **Active State (`globals.GAME_IN_PROGRESS == True`)**:
+      * Displayed in cyan/white: `2.0  RESUME GAME  [Press ENTER to Resume - Level X]`.
+      * Up/Down/W/S arrow navigation cleanly highlights and selects index 1.
+      * When pausing gameplay via ESC or ENTER, cursor automatically defaults to index 1.
+      * Activating index 1 via ENTER, mouse click, or quick key `[2]` triggers `"RESUME_GAME"`, unpausing soundtrack/SFX and instantly resuming play.
+    * **State Preservation via `pauseGame()`**:
+      * Pressing ESC or ENTER during gameplay pauses the loop without destroying any entities or resetting score/lives/timers.
+      * All sprites (`PLAYER`, `ROBOTS`, `BULLETS`, `WALLS`, `COLLIDABLE`), active timers, level progression, and player coordinates are preserved intact.
+    * **Game Session Cleanup**:
+      * When game over occurs (all lives depleted), `returnToMenu()` sets `globals.GAME_IN_PROGRESS = False`, clears entities, and resets menu cursor to index 0.
+  * **Automated Verification**:
+    * Created [`scratch/test_resume_and_startle.py`](file:///home/mjones/agy/pyzerk/scratch/test_resume_and_startle.py) verifying initial disabled state, 5s countdown startle on game start, state preservation on pause, resume transition, session cleanup on game over, and visual rendering (100% PASS).
+    * Created [`scratch/test_startle_banner_render.py`](file:///home/mjones/agy/pyzerk/scratch/test_startle_banner_render.py) validating rendered banner visual.
+    * Updated [`scratch/test_start_menu_features.py`](file:///home/mjones/agy/pyzerk/scratch/test_start_menu_features.py) for the 4-item menu indices and quick keys 1-4.
+  * **WASM Rebuild**:
+    * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag and synchronized to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Game First Start 5-Second Startle Countdown**: Active at game start (and respawn) with countdown banner `*** ROBOTS STARTLED! NO FIRING (Xs) ***`, dynamically positioned at top or bottom to avoid obscuring the player.
+* **Start Menu "2.0 RESUME GAME"**: Seamlessly integrated as item 1; grayed out with `[No Prior Game in Progress]` and skipped by navigation when idle; enabled with `[Press ENTER to Resume - Level X]` when paused; defaults cursor to resume on ESC/ENTER pause; preserves all entities, score, lives, and timers.
 * **Robot Walking Leg Animation & Directional Eye Cycling**: Fully implemented in `robots.py` with modular leg strides, 6-frame authentic arcade visor scanning (cycling left when moving left, cycling right when moving right, centered when stationary or vertical), and randomized initial phases for natural crowd animation.
 * **10-Level Bonus Life Celebration Banner**: Un-shadowed from robot startle banner; renders in prominent gold with stacked dual-banner positioning (`offset_y=28`) and celebratory audio chime; 100% visible on both top and bottom entry sides.
 * **Web Resilience & ESC Key Handling**: Pressing ESC in gameplay smoothly pauses and returns to the Start Menu without freezing the WebAssembly runtime; browser event loop protected against abrupt termination.
@@ -350,7 +388,9 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **All 13 Test Suites Passing (100%)**:
+* **All 15 Test Suites Passing (100%)**:
+  * `scratch/test_resume_and_startle.py`: PASSED (100%)
+  * `scratch/test_startle_banner_render.py`: PASSED (100%)
   * `scratch/test_robot_walk_and_eye.py`: PASSED (100%)
   * `scratch/test_bonus_life_display.py`: PASSED (100%)
   * `scratch/test_esc_key_behavior.py`: PASSED (100%)
@@ -368,6 +408,7 @@ This document tracks all features, architectural changes, audio updates, and dep
 ### Next Steps
 1. Commit tracking documentation to branch `agy_1`.
 2. Push branch `agy_1` to GitHub (`git push origin agy_1`).
+
 
 
 
