@@ -52,7 +52,8 @@ http://pygame.org/ftp/pygame-1.9.2a0.win32-py2.7.msi
 then execute run.bat from command terminal
 
 left cntrl is fire - hold and use arrows to stand ground and shoot 
-otherwise run with cursor
+spacebar initiates Death Blossom - fires simultaneously in all 8 directions (1 per active life)
+otherwise run with cursor (arrow keys)
 
 lives are unlimited
 as you die levels increase - basically robots move faster too a point and then

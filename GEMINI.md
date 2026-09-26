@@ -358,11 +358,42 @@ This document tracks all features, architectural changes, audio updates, and dep
   * **WASM Rebuild**:
     * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag and synchronized to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
 
+### 17. Player Death Blossom Special Ability (Spacebar, 8-Directional Simultaneous Firing & HUD Indicator)
+* **Features Implemented**:
+  * **Death Blossom 8-Directional Blast ([`player.py`](file:///home/mjones/agy/pyzerk/player.py), [`globals.py`](file:///home/mjones/agy/pyzerk/globals.py))**:
+    * Implemented `triggerDeathBlossom()` on `Class_Player`: fires immediately and simultaneously in all 8 directions (`UP`, `DOWN`, `LEFT`, `RIGHT`, `UPLEFT`, `UPRIGHT`, `DOWNLEFT`, `DOWNRIGHT`) with zero delay.
+    * Spawns 8 distinct `Class_Bullet` instances originating from the player radiating outwards at full projectile speed.
+    * Visual blast pose: Player assumes an authentic dual-arm firing blast pose (left arm aimed left, right arm aimed right) for the burst before cleanly resuming normal movement and leg animation.
+    * Player movement and firing resume seamlessly immediately following the blast.
+  * **One Death Blossom Per Active Life Rule ([`globals.py`](file:///home/mjones/agy/pyzerk/globals.py), [`main.py`](file:///home/mjones/agy/pyzerk/main.py))**:
+    * `globals.DEATH_BLOSSOM_AVAILABLE` tracks availability: initialized to `True` at game start (`startNewGame()`).
+    * Once triggered, `globals.DEATH_BLOSSOM_AVAILABLE` expires (`False`) for the remainder of that life; further Spacebar presses are ignored.
+    * Death Blossom recharges only upon starting a new active life (when the player dies and respawns via `respawnCurrentLevel()`).
+    * Moving between levels without dying retains the current life's expired/available status.
+  * **Keyboard Integration ([`keybo.py`](file:///home/mjones/agy/pyzerk/keybo.py))**:
+    * Mapped `pygame.K_SPACE` to `self.death_blossom = True` and passed to container item `"death_blossom"`.
+    * Passed into `player.updateMovement(..., death_blossom=death_blossom_cmd)`.
+  * **In-Game HUD Status Indicator ([`main.py`](file:///home/mjones/agy/pyzerk/main.py))**:
+    * Rendered in top status bar `draw_hud`:
+      * Available: `BLOSSOM: READY` in bright neon magenta `(255, 100, 255)`.
+      * Expired: `BLOSSOM: USED` in muted gray `(120, 120, 120)`.
+    * Clean spacing and positioning at `x=365` between `LEVEL` and `HI` score.
+  * **Controls & Instructions Updates ([`menu.py`](file:///home/mjones/agy/pyzerk/menu.py), [`README.md`](file:///home/mjones/agy/pyzerk/README.md), HTML Overlays)**:
+    * Start Menu controls panel updated with: `SPACEBAR: DEATH BLOSSOM! Fire in all 8 directions simultaneously (1 per life)`.
+    * Web Floating HUD updated in both `webdeploy/index.html` and `../gemini_integrated_website/pyzerk/index.html` with `<kbd>SPACE</kbd> Death Blossom`.
+    * `README.md` controls section updated.
+  * **Automated Verification**:
+    * Created [`scratch/test_death_blossom.py`](file:///home/mjones/agy/pyzerk/scratch/test_death_blossom.py) verifying 8-directional firing, 1-per-life rule, respawn recharge, spacebar keyboard integration, resumption of normal movement and firing, and visual HUD rendering (100% PASS).
+    * Saved visual verification artifacts: [`scratch/test_death_blossom_hud.png`](file:///home/mjones/agy/pyzerk/scratch/test_death_blossom_hud.png), [`scratch/test_death_blossom_menu.png`](file:///home/mjones/agy/pyzerk/scratch/test_death_blossom_menu.png).
+  * **WASM Rebuild**:
+    * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag and synchronized to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Player Death Blossom Ability**: Spacebar triggers simultaneous 8-directional projectile blast with zero delay; limited to 1 per active life; recharges on respawn/new life; HUD indicator shows `BLOSSOM: READY` (neon magenta) vs `BLOSSOM: USED` (dim gray); in-game instructions updated across menu, readme, and web HUD.
 * **Game First Start 5-Second Startle Countdown**: Active at game start (and respawn) with countdown banner `*** ROBOTS STARTLED! NO FIRING (Xs) ***`, dynamically positioned at top or bottom to avoid obscuring the player.
 * **Start Menu "2.0 RESUME GAME"**: Seamlessly integrated as item 1; grayed out with `[No Prior Game in Progress]` and skipped by navigation when idle; enabled with `[Press ENTER to Resume - Level X]` when paused; defaults cursor to resume on ESC/ENTER pause; preserves all entities, score, lives, and timers.
 * **Robot Walking Leg Animation & Directional Eye Cycling**: Fully implemented in `robots.py` with modular leg strides, 6-frame authentic arcade visor scanning (cycling left when moving left, cycling right when moving right, centered when stationary or vertical), and randomized initial phases for natural crowd animation.
@@ -388,7 +419,8 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **All 15 Test Suites Passing (100%)**:
+* **All 16 Test Suites Passing (100%)**:
+  * `scratch/test_death_blossom.py`: PASSED (100%)
   * `scratch/test_resume_and_startle.py`: PASSED (100%)
   * `scratch/test_startle_banner_render.py`: PASSED (100%)
   * `scratch/test_robot_walk_and_eye.py`: PASSED (100%)

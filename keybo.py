@@ -9,9 +9,12 @@ class Class_ProcessKeybo():
         self.running = 1
         self.fullscreen = 0
         self.return_to_menu = False
+        self.death_blossom = False
 
     def run(self, screensize, screen, screen_backcolor, mainContC, events=None):
         self.return_to_menu = False
+        self.death_blossom = False
+        mainContC.addItem("death_blossom", False)
         keys = pygame.key.get_pressed()
 
         # totally wierd SPACE key is blocked
@@ -60,6 +63,9 @@ class Class_ProcessKeybo():
                 if event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
                     self.return_to_menu = True
                     globals.MENUON = True
+                elif event.key == pygame.K_SPACE:
+                    self.death_blossom = True
+                    mainContC.addItem("death_blossom", True)
                 elif event.key == pygame.K_F11:
                     if self.fullscreen == 0:
                         pygame.display.set_mode(screensize, pygame.FULLSCREEN)

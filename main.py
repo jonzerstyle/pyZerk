@@ -147,6 +147,7 @@ def respawnCurrentLevel():
     """Respawn the player and reset the room for the current level without advancing."""
     setupRoom(globals.LEVEL, entry_side=current_entry_side)
     globals.ROBOT_STARTLE_TIMER = 5 * globals.FRAME_RATE_SETTING
+    globals.DEATH_BLOSSOM_AVAILABLE = True
 
 def startNewGame():
     """Start a fresh new game from Level 1, resetting score, lives, level, loop counter, and startle timer."""
@@ -159,6 +160,7 @@ def startNewGame():
     globals.LIVES = globals.INITIAL_LIVES
     globals.LEVELS_PASSED = 0
     globals.PENDING_EXIT = None
+    globals.DEATH_BLOSSOM_AVAILABLE = True
     for a in globals.OBJECTS:
         a.kill()
     startNewLevel()
@@ -176,6 +178,7 @@ def pauseGame(start_menu_obj=None, container_obj=None):
     if container_obj:
         container_obj.addItem("player_movement", movement.dirEnum.NONE)
         container_obj.addItem("player_fire", "ceasefire")
+        container_obj.addItem("death_blossom", False)
 
 def returnToMenu(start_menu_obj=None):
     """Return to start menu after game ends, halting gameplay entities and clearing active session."""
@@ -183,6 +186,7 @@ def returnToMenu(start_menu_obj=None):
     globals.GAME_IN_PROGRESS = False
     globals.ROBOT_STARTLE_TIMER = 0
     globals.PENDING_EXIT = None
+    globals.DEATH_BLOSSOM_AVAILABLE = True
     if start_menu_obj:
         start_menu_obj.selected_index = 0
     for a in globals.OBJECTS:
@@ -190,9 +194,11 @@ def returnToMenu(start_menu_obj=None):
 
 
 def updateMovement(main_containerObj):
+    death_blossom_cmd = main_containerObj.getItem("death_blossom") if main_containerObj else False
     for a in globals.PLAYER.sprites():
         a.updateMovement(main_containerObj.getItem("player_movement"),\
-                         main_containerObj.getItem("player_fire"))
+                         main_containerObj.getItem("player_fire"),\
+                         death_blossom=death_blossom_cmd)
     for a in globals.ROBOTS.sprites():
         a.updateMovement()
     for a in globals.OTTO.sprites():
@@ -231,13 +237,18 @@ def draw_hud(screen, hud_font):
     else:
         level_text = f"LEVEL: {globals.LEVEL}"
     level_surf = hud_font.render(level_text, True, globals.CYAN)
+    if globals.DEATH_BLOSSOM_AVAILABLE:
+        blossom_surf = hud_font.render("BLOSSOM: READY", True, (255, 100, 255))
+    else:
+        blossom_surf = hud_font.render("BLOSSOM: USED", True, (120, 120, 120))
     hi_surf = hud_font.render(f"HI: {globals.HIGH_SCORE} ({globals.HIGH_SCORE_INITIALS})", True, (255, 215, 0))
     menu_hint_surf = hud_font.render("[ESC: MENU]", True, globals.YELLOW)
-    screen.blit(score_surf, (15, 8))
-    screen.blit(lives_surf, (155, 8))
-    screen.blit(level_surf, (270, 8))
-    screen.blit(hi_surf, (440, 8))
-    screen.blit(menu_hint_surf, (665, 8))
+    screen.blit(score_surf, (10, 8))
+    screen.blit(lives_surf, (140, 8))
+    screen.blit(level_surf, (225, 8))
+    screen.blit(blossom_surf, (365, 8))
+    screen.blit(hi_surf, (530, 8))
+    screen.blit(menu_hint_surf, (685, 8))
 
 def draw_status_banner(screen, banner_font, text, text_color, border_color, bg_color, is_bottom, offset_y=0):
     """Draw status popup banner at top or bottom to avoid obscuring the player, with optional vertical stacking offset."""

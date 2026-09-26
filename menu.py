@@ -434,16 +434,17 @@ class Class_StartMenu:
         controls = [
             ("ARROW KEYS:", "Move / Run character in 8 directions (Up, Down, Left, Right, Diagonals)"),
             ("LEFT CTRL:",  "HOLD Left Ctrl + Arrow Keys to aim laser gun and shoot"),
+            ("SPACEBAR:",   "DEATH BLOSSOM! Fire in all 8 directions simultaneously (1 per life)"),
             ("LIVES SYSTEM:", "Start with 3 lives. Pass every 10 levels to earn +1 extra life!"),
             ("ESC / ENTER:", "Pause gameplay to open Menu; select Resume Game to continue anytime"),
             ("MENU KEYS:",  "UP/DOWN = Select option | LEFT/RIGHT = Volume | ENTER = Confirm / Sample"),
             ("OBJECTIVE:",  "Eliminate all robots or reach maze exits! Beware of bouncing OTTO!")
         ]
         
-        line_y = y + 36
+        line_y = y + 35
         for key_label, desc in controls:
             lbl_surf = self.font_ctrl.render(key_label, True, self.KEY_LABEL_COLOR)
             desc_surf = self.font_ctrl.render(desc, True, self.KEY_DESC_COLOR)
             surface.blit(lbl_surf, (x + 20, line_y))
             surface.blit(desc_surf, (x + 135, line_y))
-            line_y += 28
+            line_y += 25

@@ -207,7 +207,39 @@ class Class_Player(object.Class_Obj):
             sounds.playSound(sounds.playerDeathSound)
         self.killState = True
 
-    def updateMovement(self, player_movement_dir, player_fire):
+    def triggerDeathBlossom(self):
+        """Fire immediately in all 8 directions simultaneously with zero delay (1 per active life)."""
+        if not globals.DEATH_BLOSSOM_AVAILABLE:
+            return False
+
+        globals.DEATH_BLOSSOM_AVAILABLE = False
+
+        all_dirs = [
+            movement.dirEnum.UP,
+            movement.dirEnum.UPRIGHT,
+            movement.dirEnum.RIGHT,
+            movement.dirEnum.DOWNRIGHT,
+            movement.dirEnum.DOWN,
+            movement.dirEnum.DOWNLEFT,
+            movement.dirEnum.LEFT,
+            movement.dirEnum.UPLEFT,
+        ]
+
+        # Momentarily halt movement and enter Death Blossom dual-arm blasting pose
+        self.speed[0] = 0.0
+        self.speed[1] = 0.0
+        self.aim_hold_timer = int(player_gunheatcnt_max)
+        self.current_aim_dir = "DEATH_BLOSSOM"
+        self.gunHeatCnt = player_gunheatcnt_max
+
+        # Fire simultaneously in all 8 directions with no delay
+        for d in all_dirs:
+            bullets.Class_Bullet(self, [0, 0], d)
+            self.bullets += 1
+
+        return True
+
+    def updateMovement(self, player_movement_dir, player_fire, death_blossom=False):
         speed_vect = movement.number_to_speed_vect[player_movement_dir]
         self.speed[0] = player_speed_mag * speed_vect[0]
         self.speed[1] = player_speed_mag * speed_vect[1]
@@ -229,6 +261,10 @@ class Class_Player(object.Class_Obj):
             self.aim_hold_timer -= 1
             if self.aim_hold_timer == 0:
                 self.current_aim_dir = None
+
+        # Check Death Blossom trigger (Spacebar)
+        if death_blossom:
+            self.triggerDeathBlossom()
 
         if player_fire == "shoot":
             # Stop player movement while shooting
@@ -268,7 +304,11 @@ class Class_Player(object.Class_Obj):
 
         if self.current_aim_dir is not None:
             aim_dir = self.current_aim_dir
-            if aim_dir in (movement.dirEnum.LEFT, movement.dirEnum.UPLEFT, movement.dirEnum.DOWNLEFT):
+            if aim_dir == "DEATH_BLOSSOM":
+                # Dual-arm firing pose: left arm aims left, right arm aims right
+                active_left_arm = NORM_LEFT_AIM[movement.dirEnum.LEFT]
+                active_right_arm = NORM_RIGHT_AIM[movement.dirEnum.RIGHT]
+            elif aim_dir in (movement.dirEnum.LEFT, movement.dirEnum.UPLEFT, movement.dirEnum.DOWNLEFT):
                 # Point left arm in the direction of fire
                 active_left_arm = NORM_LEFT_AIM.get(aim_dir, NORM_DEFAULT_LEFT_ARM)
             elif aim_dir in (movement.dirEnum.RIGHT, movement.dirEnum.UPRIGHT, movement.dirEnum.DOWNRIGHT):
