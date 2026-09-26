@@ -88,9 +88,14 @@ otto_color_list_pts = [otto_polygon_colors[:],otto_eye1_polygon_colors[:],otto_e
 
 # class to display a real object - inherits low level Obj class
 class Class_Otto(object.Class_Obj):
-    def __init__(self, speed = [0.0,0.0], pos = otto_start_pos, size = otto_pixel_size,\
+    def __init__(self, speed = [0.0,0.0], pos = None, size = otto_pixel_size,\
                  list_polygon_pts = otto_polygon_list_pts,\
                  list_colors = otto_color_list_pts, groups = []):
+        if pos is None:
+            if hasattr(globals, 'PLAYER_MAZE_START_POS') and globals.PLAYER_MAZE_START_POS is not None:
+                pos = copy.deepcopy(globals.PLAYER_MAZE_START_POS)
+            else:
+                pos = copy.deepcopy(otto_start_pos)
         self.blitImage = None
         self.angle = 0.0
         self.size = copy.deepcopy(size)

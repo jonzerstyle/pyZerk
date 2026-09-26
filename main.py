@@ -105,6 +105,8 @@ def setupRoom(level_num, entry_side=None, maze_instance=None):
         spawn_pos = list(player.player_start_pos)
         facing = movement.dirEnum.RIGHT
 
+    globals.PLAYER_MAZE_START_POS = list(spawn_pos)
+
     p = player.Class_Player(spawn_pos, [0, 0])
     p.facing_dir = facing
 
@@ -222,8 +224,9 @@ def oneSecTimer(timer):
                 globals.OTTOTIMER -= 1
             else:
                 globals.OTTOTIMER = otto.ottoTimerReload 
-                #make otto
-                otto.Class_Otto()
+                # Spawn Otto at the location where the player started the current maze
+                otto_pos = globals.PLAYER_MAZE_START_POS if globals.PLAYER_MAZE_START_POS is not None else otto.otto_start_pos
+                otto.Class_Otto(pos=list(otto_pos))
                 sounds.playSound(sounds.ottoAliveSound)
     return timer
 

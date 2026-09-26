@@ -390,11 +390,40 @@ This document tracks all features, architectural changes, audio updates, and dep
   * **WASM Rebuild**:
     * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag and synchronized to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
 
+### 18. Evil Otto Entrance Spawning & Chasing Mechanic (2026-09-26)
+* **Feature Requirement**:
+  * Instead of hardcoded left-side spawning (`[80, 240]`), Otto now spawns directly at the location where the player entered/started the current maze (`globals.PLAYER_MAZE_START_POS`).
+  * Creates the authentic Berzerk arcade effect of Evil Otto following behind the player as they move from maze to maze.
+* **Implementation Details**:
+  * **Maze Start Tracking ([`globals.py`](file:///home/mjones/agy/pyzerk/globals.py), [`main.py`](file:///home/mjones/agy/pyzerk/main.py))**:
+    * Added `globals.PLAYER_MAZE_START_POS` tracking the exact coordinate where the player begins the active room.
+    * Recorded in `setupRoom()` across all transition modes:
+      * New game / Level 1: `[80.0, 240.0]`.
+      * Exit `UP` (entering from bottom of new maze): `[400.0, 435.0]`.
+      * Exit `DOWN` (entering from top of new maze): `[400.0, 45.0]`.
+      * Exit `LEFT` (entering from right of new maze): `[755.0, 240.0]`.
+      * Exit `RIGHT` (entering from left of new maze): `[45.0, 240.0]`.
+      * Respawn on death: preserves entrance coordinate for current level.
+  * **Otto Class Initialization ([`otto.py`](file:///home/mjones/agy/pyzerk/otto.py))**:
+    * Updated `Class_Otto.__init__(pos=None)` to default dynamically to `globals.PLAYER_MAZE_START_POS`.
+  * **Spawning Dispatch ([`main.py`](file:///home/mjones/agy/pyzerk/main.py))**:
+    * Updated `oneSecTimer()` to spawn Otto directly at `globals.PLAYER_MAZE_START_POS`.
+    * Otto immediately computes movement vectors aiming from the entrance toward the player's active position, chasing them from behind.
+* **Automated Verification**:
+  * Created [`scratch/test_otto_spawn.py`](file:///home/mjones/agy/pyzerk/scratch/test_otto_spawn.py) verifying:
+    1. Level 1 start pos spawning and chase vector.
+    2. All 4 cardinal entrance locations (TOP, BOTTOM, LEFT, RIGHT).
+    3. Respawn preservation of entrance location.
+    All tests pass 100%.
+* **WASM Rebuild & Sync**:
+  * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` and deployed to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Evil Otto Entrance Spawning & Chasing**: Otto spawns at the player's entrance location for the current maze, creating the authentic arcade effect of Otto following behind the player as they navigate through mazes.
 * **Player Death Blossom Ability**: Spacebar triggers simultaneous 8-directional projectile blast with zero delay; limited to 1 per active life; recharges on respawn/new life AND upon completing every 10 levels passed milestone; top HUD indicator shows `DB:` with authentic Green (active) / Red (expired) hardware arcade LED; in-game instructions updated across menu, readme, and web HUD.
 * **Game First Start 5-Second Startle Countdown**: Active at game start (and respawn) with countdown banner `*** ROBOTS STARTLED! NO FIRING (Xs) ***`, dynamically positioned at top or bottom to avoid obscuring the player.
 * **Start Menu "2.0 RESUME GAME"**: Seamlessly integrated as item 1; grayed out with `[No Prior Game in Progress]` and skipped by navigation when idle; enabled with `[Press ENTER to Resume - Level X]` when paused; defaults cursor to resume on ESC/ENTER pause; preserves all entities, score, lives, and timers.
