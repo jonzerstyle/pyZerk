@@ -154,24 +154,28 @@ def test_resume_normal_gameplay():
     print("  -> Resumed normal movement and firing seamlessly!")
 
 def test_hud_indicator_render():
-    print("Testing HUD Death Blossom status indicator rendering...")
+    print("Testing HUD Death Blossom LED status indicator rendering...")
     setup_clean_env()
     hud_font = pygame.font.Font(None, 24)
     screen = pygame.Surface(globals.SCREENSIZE)
     
-    # Render with Blossom READY
+    # 1. Render with Blossom ACTIVE (Green LED)
     globals.DEATH_BLOSSOM_AVAILABLE = True
     screen.fill((0, 0, 0))
     main.draw_hud(screen, hud_font)
+    green_color = screen.get_at((432, 16))
+    assert green_color[1] > 200 and green_color[0] < 50, f"Expected vibrant green LED, got {green_color}"
     
-    # Render with Blossom USED
+    # 2. Render with Blossom EXPIRED (Red LED)
     globals.DEATH_BLOSSOM_AVAILABLE = False
     screen.fill((0, 0, 0))
     main.draw_hud(screen, hud_font)
+    red_color = screen.get_at((432, 16))
+    assert red_color[0] > 200 and red_color[1] < 50, f"Expected bright red LED, got {red_color}"
     
     # Save visual verification artifact
-    pygame.image.save(screen, os.path.join(os.path.dirname(__file__), "test_death_blossom_hud.png"))
-    print("  -> HUD indicator rendered and saved to test_death_blossom_hud.png!")
+    pygame.image.save(screen, os.path.join(os.path.dirname(__file__), "test_death_blossom_led_hud.png"))
+    print(f"  -> LED indicator verified: Active Green {green_color[:3]}, Expired Red {red_color[:3]}!")
 
 def test_menu_instructions_updated():
     print("Testing Start Menu controls instructions for Death Blossom...")

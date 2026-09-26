@@ -237,18 +237,32 @@ def draw_hud(screen, hud_font):
     else:
         level_text = f"LEVEL: {globals.LEVEL}"
     level_surf = hud_font.render(level_text, True, globals.CYAN)
-    if globals.DEATH_BLOSSOM_AVAILABLE:
-        blossom_surf = hud_font.render("BLOSSOM: READY", True, (255, 100, 255))
-    else:
-        blossom_surf = hud_font.render("BLOSSOM: USED", True, (120, 120, 120))
+    
+    # Death Blossom LED status indicator (Green = Active, Red = Expired)
+    db_label = hud_font.render("DB:", True, globals.WHITE)
     hi_surf = hud_font.render(f"HI: {globals.HIGH_SCORE} ({globals.HIGH_SCORE_INITIALS})", True, (255, 215, 0))
     menu_hint_surf = hud_font.render("[ESC: MENU]", True, globals.YELLOW)
-    screen.blit(score_surf, (10, 8))
-    screen.blit(lives_surf, (140, 8))
-    screen.blit(level_surf, (225, 8))
-    screen.blit(blossom_surf, (365, 8))
-    screen.blit(hi_surf, (530, 8))
-    screen.blit(menu_hint_surf, (685, 8))
+    
+    screen.blit(score_surf, (15, 8))
+    screen.blit(lives_surf, (155, 8))
+    screen.blit(level_surf, (260, 8))
+    screen.blit(db_label, (395, 8))
+    
+    # Draw LED indicator (Green = Active, Red = Expired)
+    cx, cy = 432, 16
+    if globals.DEATH_BLOSSOM_AVAILABLE:
+        # Green LED (Active)
+        pygame.draw.circle(screen, (0, 60, 20), (cx, cy), 7)
+        pygame.draw.circle(screen, (0, 240, 60), (cx, cy), 6)
+        pygame.draw.circle(screen, (180, 255, 200), (cx - 1, cy - 1), 2)
+    else:
+        # Red LED (Expired)
+        pygame.draw.circle(screen, (60, 10, 10), (cx, cy), 7)
+        pygame.draw.circle(screen, (240, 40, 40), (cx, cy), 6)
+        pygame.draw.circle(screen, (255, 180, 180), (cx - 1, cy - 1), 2)
+        
+    screen.blit(hi_surf, (470, 8))
+    screen.blit(menu_hint_surf, (670, 8))
 
 def draw_status_banner(screen, banner_font, text, text_color, border_color, bg_color, is_bottom, offset_y=0):
     """Draw status popup banner at top or bottom to avoid obscuring the player, with optional vertical stacking offset."""
