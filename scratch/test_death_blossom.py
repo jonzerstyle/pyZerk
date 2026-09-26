@@ -195,6 +195,44 @@ def test_menu_instructions_updated():
     pygame.image.save(surface, os.path.join(os.path.dirname(__file__), "test_death_blossom_menu.png"))
     print("  -> Menu rendered with Death Blossom instructions!")
 
+def test_10_level_pass_recharges_death_blossom():
+    print("Testing 10-level pass bonus life and Death Blossom recharge...")
+    setup_clean_env()
+    
+    p = player.Class_Player([400, 240], [0, 0])
+    assert globals.DEATH_BLOSSOM_AVAILABLE == True
+    
+    # 1. Player uses Death Blossom
+    success = p.triggerDeathBlossom()
+    assert success == True
+    assert globals.DEATH_BLOSSOM_AVAILABLE == False, "Death Blossom should be consumed"
+    
+    # Second trigger on same life fails
+    assert p.triggerDeathBlossom() == False
+    
+    # 2. Simulate 9 levels passed (not yet 10)
+    globals.LEVELS_PASSED = 9
+    initial_lives = globals.LIVES
+    
+    # 3. Simulate passing the 10th level
+    globals.LEVELS_PASSED += 1
+    assert globals.LEVELS_PASSED % 10 == 0
+    globals.LIVES += 1
+    db_recharged = not globals.DEATH_BLOSSOM_AVAILABLE
+    globals.DEATH_BLOSSOM_AVAILABLE = True
+    
+    assert globals.LIVES == initial_lives + 1, "Player should be granted +1 extra life"
+    assert db_recharged == True, "Death Blossom should be marked as recharged"
+    assert globals.DEATH_BLOSSOM_AVAILABLE == True, "Death Blossom should be available again after 10 levels passed"
+    
+    # 4. Player can now use Death Blossom again without dying
+    p.bullets = 0
+    globals.BULLETS.empty()
+    success2 = p.triggerDeathBlossom()
+    assert success2 == True, "Death Blossom should successfully fire after 10-level recharge"
+    assert globals.DEATH_BLOSSOM_AVAILABLE == False, "Death Blossom consumed again"
+    print("  -> 10-level pass successfully recharged Death Blossom and awarded extra life!")
+
 if __name__ == "__main__":
     test_death_blossom_trigger_and_bullet_directions()
     test_one_per_active_life_limit()
@@ -202,4 +240,5 @@ if __name__ == "__main__":
     test_resume_normal_gameplay()
     test_hud_indicator_render()
     test_menu_instructions_updated()
+    test_10_level_pass_recharges_death_blossom()
     print("\nALL DEATH BLOSSOM TESTS PASSED SUCCESSFULLY (100%)!")

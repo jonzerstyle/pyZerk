@@ -395,7 +395,7 @@ This document tracks all features, architectural changes, audio updates, and dep
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
-* **Player Death Blossom Ability**: Spacebar triggers simultaneous 8-directional projectile blast with zero delay; limited to 1 per active life; recharges on respawn/new life; top HUD indicator shows `DB:` with authentic Green (active) / Red (expired) hardware arcade LED; in-game instructions updated across menu, readme, and web HUD.
+* **Player Death Blossom Ability**: Spacebar triggers simultaneous 8-directional projectile blast with zero delay; limited to 1 per active life; recharges on respawn/new life AND upon completing every 10 levels passed milestone; top HUD indicator shows `DB:` with authentic Green (active) / Red (expired) hardware arcade LED; in-game instructions updated across menu, readme, and web HUD.
 * **Game First Start 5-Second Startle Countdown**: Active at game start (and respawn) with countdown banner `*** ROBOTS STARTLED! NO FIRING (Xs) ***`, dynamically positioned at top or bottom to avoid obscuring the player.
 * **Start Menu "2.0 RESUME GAME"**: Seamlessly integrated as item 1; grayed out with `[No Prior Game in Progress]` and skipped by navigation when idle; enabled with `[Press ENTER to Resume - Level X]` when paused; defaults cursor to resume on ESC/ENTER pause; preserves all entities, score, lives, and timers.
 * **Robot Walking Leg Animation & Directional Eye Cycling**: Fully implemented in `robots.py` with modular leg strides, 6-frame authentic arcade visor scanning (cycling left when moving left, cycling right when moving right, centered when stationary or vertical), and randomized initial phases for natural crowd animation.

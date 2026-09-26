@@ -328,6 +328,7 @@ async def main():
     respawn_timer = 0
     game_over_timer = 0
     bonus_life_timer = 0
+    db_recharged_notice = False
     loop_banner_timer = 0
 
     # Maze scrolling transition state
@@ -360,6 +361,7 @@ async def main():
                     respawn_timer = 0
                     game_over_timer = 0
                     bonus_life_timer = 0
+                    db_recharged_notice = False
                     loop_banner_timer = 0
                     startNewGame()
                     break
@@ -494,6 +496,8 @@ async def main():
                 if globals.LEVELS_PASSED % 10 == 0:
                     globals.LIVES += 1
                     bonus_life_timer = 90  # ~3 seconds celebratory banner
+                    db_recharged_notice = not globals.DEATH_BLOSSOM_AVAILABLE
+                    globals.DEATH_BLOSSOM_AVAILABLE = True
                     if globals.SOUNDS_ON:
                         sounds.playSound(sounds.welcomeSound)
                 globals.LEVEL += 1
@@ -557,10 +561,12 @@ async def main():
             elif len(globals.ROBOTS.sprites()) == 0:
                 # Level cleared!
                 globals.LEVELS_PASSED += 1
-                # Award one life back every ten levels passed
+                # Award one life back and recharge Death Blossom every ten levels passed
                 if globals.LEVELS_PASSED % 10 == 0:
                     globals.LIVES += 1
                     bonus_life_timer = 90  # ~3 seconds celebratory banner
+                    db_recharged_notice = not globals.DEATH_BLOSSOM_AVAILABLE
+                    globals.DEATH_BLOSSOM_AVAILABLE = True
                     if globals.SOUNDS_ON:
                         sounds.playSound(sounds.welcomeSound)
                 did_loop = startNewLevel()
@@ -586,9 +592,12 @@ async def main():
         if game_over_timer == 0 and respawn_timer == 0:
             banner_offset = 0
 
-            # 1. Draw 10-level bonus life celebration banner (prominent gold)
+            # 1. Draw 10-level bonus celebration banner (prominent gold)
             if bonus_life_timer > 0:
-                bonus_msg = f"*** 10 LEVELS PASSED! +1 EXTRA LIFE! (LIVES: {globals.LIVES}) ***"
+                if db_recharged_notice:
+                    bonus_msg = f"*** 10 LEVELS PASSED! +1 LIFE & DEATH BLOSSOM RECHARGED! (LIVES: {globals.LIVES}) ***"
+                else:
+                    bonus_msg = f"*** 10 LEVELS PASSED! +1 EXTRA LIFE! (LIVES: {globals.LIVES}) ***"
                 dirtyrects.append(draw_status_banner(screen, banner_font, bonus_msg, (255, 230, 0), (255, 215, 0), (35, 30, 10), is_player_at_top, offset_y=banner_offset))
                 banner_offset += 28
 
