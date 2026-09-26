@@ -301,11 +301,33 @@ This document tracks all features, architectural changes, audio updates, and dep
   * **WASM Rebuild**:
     * Rebuilt `pyzerk.apk` via Pygbag and synced to both `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 
+### 15. Robot Walking Leg Animation & Directional Eye Cycling Animation
+* **Features Implemented ([`robots.py`](file:///home/mjones/agy/pyzerk/robots.py))**:
+  * **Walking Leg Animation**:
+    * Modularized robot silhouette into upper body (`NORM_ROBOT_UPPER_LEFT`, `NORM_ROBOT_UPPER_RIGHT`) and interchangeable leg poses (`NORM_ROBOT_STANDING_LEGS`, `NORM_ROBOT_STRIDE_A_LEGS`, `NORM_ROBOT_STRIDE_B_LEGS`).
+    * Standing pose keeps both feet planted firmly on ground line (`y=130`).
+    * Stride A: left leg planted (`y=130`), right leg kicked back/lifted (`y=90..110`).
+    * Stride B: right leg planted (`y=130`), left leg kicked back/lifted (`y=90..110`).
+    * Full alternating walk cycle (Stand -> Stride -> Stand -> Stride) animated at 4 ticks per step frame.
+    * When robot halts to fire or is stopped, legs plant in standing pose.
+  * **Directional Eye Cycling Animation**:
+    * Sourced from authentic Stern 1980 arcade Berzerk sprite sheet: 6 discrete visor scanning frames (`Center`, `Mid-Left`, `Far-Left`, `Blank/Wrap`, `Far-Right`, `Mid-Right`).
+    * When moving **Left** (or diagonal UPLEFT/DOWNLEFT, `speed[0] < -0.01`): eye continuously cycles left (`Center -> Mid-Left -> Far-Left -> Blank -> Far-Right -> Mid-Right`).
+    * When moving **Right** (or diagonal UPRIGHT/DOWNRIGHT, `speed[0] > 0.01`): eye continuously cycles right (`Center -> Mid-Right -> Far-Right -> Blank -> Far-Left -> Mid-Left`).
+    * When moving purely vertically (`speed[0] == 0`) or stopped/firing: eye remains focused dead-center (`NORM_EYE_CENTER`).
+    * Initialized with randomized initial timer and frame index so groups of robots step and scan with realistic asynchronous organic timing.
+  * **Automated Verification**:
+    * Created [`scratch/test_robot_walk_and_eye.py`](file:///home/mjones/agy/pyzerk/scratch/test_robot_walk_and_eye.py) verifying modular components, stopped state, leftward eye/leg progression across all frames, rightward eye/leg progression, polygon assembly, dirtyrect drawing, and live simulation (100% PASS).
+    * Created gameplay proof visual simulation [`scratch/robot_gameplay_walk.gif`](file:///home/mjones/agy/pyzerk/scratch/robot_gameplay_walk.gif).
+  * **WASM Rebuild**:
+    * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag and synchronized to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Robot Walking Leg Animation & Directional Eye Cycling**: Fully implemented in `robots.py` with modular leg strides, 6-frame authentic arcade visor scanning (cycling left when moving left, cycling right when moving right, centered when stationary or vertical), and randomized initial phases for natural crowd animation.
 * **10-Level Bonus Life Celebration Banner**: Un-shadowed from robot startle banner; renders in prominent gold with stacked dual-banner positioning (`offset_y=28`) and celebratory audio chime; 100% visible on both top and bottom entry sides.
 * **Web Resilience & ESC Key Handling**: Pressing ESC in gameplay smoothly pauses and returns to the Start Menu without freezing the WebAssembly runtime; browser event loop protected against abrupt termination.
 * **Dynamic Status Popup Positioning**: Status banners (robot startle countdown, level loop milestone, 10-level bonus life) dynamically shift to the bottom of the screen whenever the player enters at the top, ensuring unobstructed view of the player.
@@ -328,7 +350,8 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **All 12 Test Suites Passing (100%)**:
+* **All 13 Test Suites Passing (100%)**:
+  * `scratch/test_robot_walk_and_eye.py`: PASSED (100%)
   * `scratch/test_bonus_life_display.py`: PASSED (100%)
   * `scratch/test_esc_key_behavior.py`: PASSED (100%)
   * `scratch/test_popup_positioning.py`: PASSED (100%)
@@ -345,5 +368,6 @@ This document tracks all features, architectural changes, audio updates, and dep
 ### Next Steps
 1. Commit tracking documentation to branch `agy_1`.
 2. Push branch `agy_1` to GitHub (`git push origin agy_1`).
+
 
 

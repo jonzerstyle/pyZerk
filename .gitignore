@@ -8,3 +8,4 @@ venv/
 webdeploy/
 *-pygbag.py
 scratch/*.png
+scratch/*.gif
