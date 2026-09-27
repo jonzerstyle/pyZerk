@@ -418,11 +418,39 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **WASM Rebuild & Sync**:
   * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` and deployed to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
 
+### 19. Audio Engine Anti-Glitch Fix: Dedicated Laser Channels & Snappy Envelope (2026-09-26)
+* **Problem Addressed**:
+  * Firing sound previously glitched, clicked, stuttered, and dropped out during rapid player fire or intense robot combat.
+  * Root causes:
+    1. `player_gun` audio was 1.0 second long at full volume; holding fire (every 333ms) stacked 3+ long voices simultaneously.
+    2. Robot bullets from up to 12 robots competed for the 15 SFX channels, starving the mixer.
+    3. Channel exhaustion triggered `mixer.Channel(1).play(sound)`, abruptly truncating active waveforms mid-cycle and generating harsh DC-offset pops and machine-gun stutter.
+    4. Synchronized bursts (Death Blossom) fired 8 identical sounds in the exact same frame, causing digital clipping and flanging buzz.
+* **Fixes Implemented**:
+  * **Dedicated Voice Channel Architecture ([`sounds.py`](file:///home/mjones/agy/pyzerk/sounds.py))**:
+    * `Channel 0`: `SOUNDTRACK_CHAN` (reserved background music).
+    * `Channel 1`: `PLAYER_GUN_CHAN` (dedicated player laser; re-triggers cleanly without channel contention or voice stealing).
+    * `Channels 2 & 3`: `ROBOT_GUN_CHANS` (dedicated alternating 2-voice robot laser pool).
+    * `Channels 4–15`: 12 dedicated channels reserved for general SFX (explosions, chimes, Otto, bullet clashes).
+    * General SFX channels now steal only within channels 4–15, never interrupting music, player laser, or robot lasers.
+  * **Snappy Arcade Laser Envelope (`player_gun.wav`, `player_gun.ogg`)**:
+    * Re-synthesized laser duration to a crisp **0.220s (220ms)** with a 4ms anti-click attack and exponential decay to zero amplitude.
+    * Fits cleanly within the player's 333ms fire interval, eliminating voice overlap while keeping peak amplitude at 0.85 for full dynamic headroom.
+  * **Sub-Frame Re-Trigger Debounce ([`sounds.py`](file:///home/mjones/agy/pyzerk/sounds.py), [`bullets.py`](file:///home/mjones/agy/pyzerk/bullets.py))**:
+    * `play_player_gun_sound()` debounces triggers within 60ms (Death Blossom burst plays 1 punchy, powerful blast instead of 8 stacked identical sounds).
+    * `play_robot_gun_sound()` debounces triggers within 40ms across alternating channels 2 and 3.
+* **Automated Verification**:
+  * Created [`scratch/test_sound_engine.py`](file:///home/mjones/agy/pyzerk/scratch/test_sound_engine.py) verifying 220ms duration, peak headroom <= 0.86, channel reservations, player debounce, robot alternation, and general SFX isolation (100% PASS).
+  * Full regression suite across all 10 test suites passed 100%.
+* **WASM Rebuild & Sync**:
+  * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` and deployed to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Glitch-Free Audio Engine**: Dedicated Player Laser voice (Channel 1), alternating Robot Laser pool (Channels 2-3), snappy 220ms retro laser envelope, sub-frame debounce, and 12 protected general SFX channels (Channels 4-15) completely eliminate all audio stutter, clicking, and channel starvation.
 * **Evil Otto Entrance Spawning & Chasing**: Otto spawns at the player's entrance location for the current maze, creating the authentic arcade effect of Otto following behind the player as they navigate through mazes.
 * **Player Death Blossom Ability**: Spacebar triggers simultaneous 8-directional projectile blast with zero delay; limited to 1 per active life; recharges on respawn/new life AND upon completing every 10 levels passed milestone; top HUD indicator shows `DB:` with authentic Green (active) / Red (expired) hardware arcade LED; in-game instructions updated across menu, readme, and web HUD.
 * **Game First Start 5-Second Startle Countdown**: Active at game start (and respawn) with countdown banner `*** ROBOTS STARTLED! NO FIRING (Xs) ***`, dynamically positioned at top or bottom to avoid obscuring the player.

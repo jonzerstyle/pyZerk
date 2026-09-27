@@ -109,11 +109,11 @@ class Class_Bullet(object.Class_Obj):
         # movement direction except for object itself
         self.updateMovement(direction)
 
-        # play sound
+        # play sound via dedicated channels
         if src_obj in globals.ROBOTS:
-            sounds.playSound(sounds.robotGunSound)
+            sounds.play_robot_gun_sound()
         else:
-            sounds.playSound(sounds.playerGunSound)
+            sounds.play_player_gun_sound()
     def collide(self, victim):
         #indicate to shooter that bullet is gone
         self.shooter_obj.bullets -= 1

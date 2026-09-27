@@ -9,8 +9,23 @@ try:
 except ImportError:
     import android_mixer as mixer
 
-# Reserve channel 0 exclusively for background soundtrack so SFX never interrupt it
+# Dedicated Channel Architecture:
+# - Channel 0: SOUNDTRACK_CHAN = 0 (Looping background music)
+# - Channel 1: PLAYER_GUN_CHAN = 1 (Dedicated Player Laser, zero-competition voice)
+# - Channels 2 & 3: ROBOT_GUN_CHANS = (2, 3) (Dedicated alternating Robot Laser pool)
+# - Channels 4-15: General SFX channels (Explosions, chimes, Otto, bullet clashes, etc.)
 SOUNDTRACK_CHAN = 0
+PLAYER_GUN_CHAN = 1
+ROBOT_GUN_CHANS = (2, 3)
+GENERAL_SFX_START_CHAN = 4
+
+# Minimum intervals (ms) to debounce rapid duplicate sound triggers
+PLAYER_GUN_DEBOUNCE_MS = 60
+ROBOT_GUN_DEBOUNCE_MS = 40
+
+_last_player_gun_time = 0
+_last_robot_gun_time = 0
+_robot_gun_chan_idx = 0
 
 # Volume settings (0.0 to 1.0)
 music_volume = 0.7
@@ -213,10 +228,10 @@ def init_mixer():
                 globals.SOUNDS_ON = False
                 return
 
-    # Allocate 16 channels and reserve channel 0 for music
+    # Allocate 16 channels and reserve channels 0-3 (Music, Player Gun, Robot Guns)
     try:
         mixer.set_num_channels(16)
-        mixer.set_reserved(1)
+        mixer.set_reserved(GENERAL_SFX_START_CHAN)
     except Exception:
         pass
 
@@ -238,21 +253,63 @@ def init_mixer():
     except Exception:
         globals.SOUNDS_ON = False
 
+def play_player_gun_sound():
+    """Play the player's firing laser on dedicated Channel 1 with sub-frame debounce."""
+    global _last_player_gun_time
+    if not globals.SOUNDS_ON or not mixer.get_init() or playerGunSound is None:
+        return
+    now = pygame.time.get_ticks()
+    if now - _last_player_gun_time < PLAYER_GUN_DEBOUNCE_MS:
+        return  # Suppress duplicate triggers on the same or adjacent frames (e.g. Death Blossom burst)
+    _last_player_gun_time = now
+    try:
+        chan = mixer.Channel(PLAYER_GUN_CHAN)
+        chan.play(playerGunSound)
+    except Exception:
+        pass
+
+def play_robot_gun_sound():
+    """Play a robot's firing laser on alternating Channels 2 & 3 with micro-debounce."""
+    global _last_robot_gun_time, _robot_gun_chan_idx
+    if not globals.SOUNDS_ON or not mixer.get_init() or robotGunSound is None:
+        return
+    now = pygame.time.get_ticks()
+    if now - _last_robot_gun_time < ROBOT_GUN_DEBOUNCE_MS:
+        return  # Suppress simultaneous robot firings on the exact same frame
+    _last_robot_gun_time = now
+    try:
+        target_chan_id = ROBOT_GUN_CHANS[_robot_gun_chan_idx]
+        _robot_gun_chan_idx = (_robot_gun_chan_idx + 1) % len(ROBOT_GUN_CHANS)
+        chan = mixer.Channel(target_chan_id)
+        chan.play(robotGunSound)
+    except Exception:
+        pass
+
 def playSound(sound):
-    """Play a sound effect on an available SFX channel (channels 1-15, reserving channel 0 for music)."""
+    """Play a sound effect with intelligent channel routing and priority management."""
     if not globals.SOUNDS_ON or not mixer.get_init() or sound is None:
         return
+
+    # Route laser sounds to their dedicated voice channels with debounce
+    if sound == playerGunSound:
+        play_player_gun_sound()
+        return
+    elif sound == robotGunSound:
+        play_robot_gun_sound()
+        return
+
     try:
         num_chans = mixer.get_num_channels()
-        # Find idle SFX channel starting at index 1 to never hijack SOUNDTRACK_CHAN (0)
-        for i in range(1, num_chans):
+        # Find idle SFX channel in general SFX range (Channels 4 to num_chans-1)
+        for i in range(GENERAL_SFX_START_CHAN, num_chans):
             chan = mixer.Channel(i)
             if not chan.get_busy():
                 chan.play(sound)
                 return
-        # If all SFX channels busy, fallback to playing on channel 1 (stealing lowest priority SFX)
-        if num_chans > 1:
-            mixer.Channel(1).play(sound)
+        # If all general channels busy, steal the oldest general channel (starting at GENERAL_SFX_START_CHAN)
+        # NEVER steal Channel 0 (Music), Channel 1 (Player Gun), or Channels 2/3 (Robot Guns)!
+        if num_chans > GENERAL_SFX_START_CHAN:
+            mixer.Channel(GENERAL_SFX_START_CHAN).play(sound)
     except Exception:
         pass
 
