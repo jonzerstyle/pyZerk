@@ -25,7 +25,7 @@ This document tracks all features, architectural changes, audio updates, and dep
     ├── sounds.py                             # Audio mixer manager, channel reservation & volume scaling
     ├── player.py                             # Player character logic & animation
     ├── robots.py                             # Enemy robot logic & pathfinding
-    ├── otto.py                               # Evil Otto bouncing enemy logic
+    ├── otto.py                               # Evil Otto enemy logic
     ├── maze.py                               # Maze generation & collision
     ├── bullets.py                            # Player & robot projectiles
     ├── walls.py                              # Wall rendering & collision
