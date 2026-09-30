@@ -433,12 +433,35 @@ This document tracks all features, architectural changes, audio updates, and dep
   * Synchronized updated WASM bundles to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
   * Executed [`package_godaddy.py`](file:///home/mjones/agy/gemini_integrated_website/package_godaddy.py) to package `numericagenda_godaddy_deploy.zip` with cache-busting version increment (`v=4.12`).
 
+### 20. Electrified Player Death Animation & Wilhelm Scream Synchronization (2026-09-29)
+* **User Request**: *"When the player is killed. Can you add a electrified look about the player while they are being killed and the death wilhelm death sound is being activated?"*
+* **Design & Mechanics**:
+  * **Zero-Cut Death Sequence**: Rather than immediately deleting the player sprite on collision frame 1, player enters an active electrocution death state (`is_electrocuted = True`, `electrocute_timer = 36`) perfectly timed to the 1.195-second Wilhelm scream (~36 frames at 30 FPS).
+  * **Gameplay Room Freeze**: When player electrocution activates, robot movement and firing are frozen in place, and Otto's hop timer is paused, centering 100% of audio and visual focus on the dramatic electrocution and Wilhelm scream with zero gunshot sound interference.
+  * **Violent Convulsion Poses**: Alternates every 2 frames between two distinct shock poses:
+    * `ELECTROCUTED_POSE_A`: Arms flared outward and upward (`UPLEFT`/`UPRIGHT`), legs spread in stride (`STRIDE_A`).
+    * `ELECTROCUTED_POSE_B`: Arms convulsing downward (`DOWNLEFT`/`DOWNRIGHT`), legs rigid (`PASSING_A`).
+  * **High-Voltage Tremor Jitter**: Applies random per-frame micro-displacement (`dx in [-2..2], dy in [-1..1]`) simulating intense physical muscle spasm under electrical current.
+  * **Strobing Electric Color Palette**: Body fill and outline strobe rapidly through a 7-stage electric palette (Lightning White, Arc Yellow, Voltage Cyan, Ion Magenta, Electric Blue, Neon Green).
+  * **Electric Corona Halo**: Outlines the player with an expanded 1.5 px glowing high-voltage corona halo.
+  * **Inner X-Ray Electric Skeleton Flash**: Stroboscopically renders an illuminated white skull, spine line, and rib crossbars inside the silhouette on alternating frames.
+  * **Procedural Jagged Lightning Arcs**: Emits 3 to 5 procedural multi-segment lightning discharge arcs every frame from key body nodes (head, hands, torso, feet) with sharp perpendicular bends.
+  * **Active Spark Particles & Dissolve**: Spawns electric spark particles that drift outward; during the final 6 frames (frames 30–36), the body strobes and disintegrates into a burst of dispersing electric sparks as the Wilhelm scream concludes.
+  * **Clean Life Deduction & Respawn Hand-Off**: Once the 36-frame timer elapses, `self.kill()` is called, life is decremented (`globals.LIVES -= 1`), and the room transitions seamlessly to the respawn banner (or Game Over).
+* **Automated Verification**:
+  * Created [`scratch/test_electrified_death.py`](file:///home/mjones/agy/pyzerk/scratch/test_electrified_death.py) verifying electrocution state variables, collision triggering, movement/shooting suppression, 36-frame draw execution across all frames, and main loop life deduction integration (100% PASS).
+* **WASM Rebuild & Sync**:
+  * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag.
+  * Synchronized updated WASM bundles to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
+  * Executed [`package_godaddy.py`](file:///home/mjones/agy/gemini_integrated_website/package_godaddy.py) to package `numericagenda_godaddy_deploy.zip` with cache-busting version increment (`v=4.13`).
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
-* **Wilhelm Scream Player Death Sound**: Player death now triggers the iconic Wilhelm scream cleanly with zero attack latency, native 44.1 kHz sampling, and Vorbis/PCM encoding across both desktop and browser WebAssembly builds.
+* **Electrified Player Death Animation**: When killed by electrified walls, robot bullets, or Otto, the player character now convulsively electrifies for 36 frames (~1.2 seconds) with flailing shock poses, violent high-voltage jitter, strobing electric colors, an outer corona halo, an inner X-ray electric skeleton flash, procedural crackling lightning discharge arcs, and a dissolving spark burst in perfect synchronization with the Wilhelm scream.
+* **Wilhelm Scream Player Death Sound**: Player death triggers the iconic Wilhelm scream cleanly with zero attack latency, native 44.1 kHz sampling, and Vorbis/PCM encoding across both desktop and browser WebAssembly builds.
 * **Evil Otto Entrance Spawning & Chasing**: Otto spawns at the player's entrance location for the current maze, creating the authentic arcade effect of Otto following behind the player as they navigate through mazes.
 * **Player Death Blossom Ability**: Spacebar triggers simultaneous 8-directional projectile blast with zero delay; limited to 1 per active life; recharges on respawn/new life AND upon completing every 10 levels passed milestone; top HUD indicator shows `DB:` with authentic Green (active) / Red (expired) hardware arcade LED; in-game instructions updated across menu, readme, and web HUD.
 * **Game First Start 5-Second Startle Countdown**: Active at game start (and respawn) with countdown banner `*** ROBOTS STARTLED! NO FIRING (Xs) ***`, dynamically positioned at top or bottom to avoid obscuring the player.
@@ -466,7 +489,8 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place; Wilhelm scream active on player death.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **All 17 Test Suites Passing (100%)**:
+* **All 18 Test Suites Passing (100%)**:
+  * `scratch/test_electrified_death.py`: PASSED (100%)
   * `scratch/test_player_death_sound.py`: PASSED (100%)
   * `scratch/test_death_blossom.py`: PASSED (100%)
   * `scratch/test_resume_and_startle.py`: PASSED (100%)

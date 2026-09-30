@@ -6,6 +6,8 @@ import copy
 import movement
 import sounds
 import bullets
+import random
+import math
 
 # Define player base dimensions
 player_polygon_max_cnt = (70.0, 140.0)
@@ -145,6 +147,34 @@ NORM_PASSING_LEGS_B = normalize_points(PASSING_LEGS_B)
 NORM_LEFT_AIM = {k: normalize_points(v) for k, v in LEFT_AIM.items()}
 NORM_RIGHT_AIM = {k: normalize_points(v) for k, v in RIGHT_AIM.items()}
 
+# Electrocuted convulsive poses (shocked arms flailing and alternating legs)
+ELECTROCUTED_POSE_A = (
+    NORM_HEAD_LEFT
+    + NORM_LEFT_AIM[movement.dirEnum.UPLEFT]
+    + NORM_STRIDE_A_LEGS
+    + NORM_RIGHT_AIM[movement.dirEnum.UPRIGHT]
+    + NORM_HEAD_RIGHT
+)
+
+ELECTROCUTED_POSE_B = (
+    NORM_HEAD_LEFT
+    + NORM_LEFT_AIM[movement.dirEnum.DOWNLEFT]
+    + NORM_PASSING_LEGS_A
+    + NORM_RIGHT_AIM[movement.dirEnum.DOWNRIGHT]
+    + NORM_HEAD_RIGHT
+)
+
+# Rapid cycling electric palette: (fill_color, outline_color)
+ELECTRIC_COLORS = [
+    ((255, 255, 255), (0, 255, 255)),    # White fill, Cyan outline
+    ((0, 255, 255), (255, 255, 255)),    # Cyan fill, White outline
+    ((255, 255, 0), (255, 0, 255)),      # Yellow fill, Magenta outline
+    ((255, 255, 255), (255, 255, 0)),    # White fill, Yellow outline
+    ((255, 0, 255), (0, 255, 255)),      # Magenta fill, Cyan outline
+    ((100, 200, 255), (255, 255, 255)),  # Electric blue, White outline
+    ((0, 255, 128), (255, 255, 0)),      # Neon green, Yellow outline
+]
+
 # Build default player polygon in normalized coordinates
 player_polygon_pts = copy.deepcopy(
     NORM_HEAD_LEFT + NORM_DEFAULT_LEFT_ARM + NORM_STANDING_LEGS + NORM_DEFAULT_RIGHT_ARM + NORM_HEAD_RIGHT
@@ -190,6 +220,12 @@ class Class_Player(object.Class_Obj):
         self.aim_hold_timer = 0
         self.current_aim_dir = None
 
+        # Electrocution death state (synchronized with Wilhelm scream)
+        self.is_electrocuted = False
+        self.electrocute_timer = 0
+        self.electrocute_max_timer = 36  # ~1.2s @ 30 FPS, matches Wilhelm scream duration
+        self.sparks = []
+
         # Put in groups
         object.Class_Obj.__init__(self, pos, speed, groups + [globals.PLAYER, globals.COLLIDABLE])
 
@@ -203,13 +239,22 @@ class Class_Player(object.Class_Obj):
             return
         if pygame.sprite.spritecollideany(self, globals.EXITS):
             return
+        if self.is_electrocuted:
+            return
         if globals.SOUNDS_ON:
             sounds.playSound(sounds.playerDeathSound)
         self.killState = True
+        self.is_electrocuted = True
+        self.electrocute_timer = self.electrocute_max_timer
+        self.speed[0] = 0.0
+        self.speed[1] = 0.0
+        self.aim_hold_timer = 0
+        self.current_aim_dir = None
+        self.sparks = []
 
     def triggerDeathBlossom(self):
         """Fire immediately in all 8 directions simultaneously with zero delay (1 per active life)."""
-        if not globals.DEATH_BLOSSOM_AVAILABLE:
+        if not globals.DEATH_BLOSSOM_AVAILABLE or self.is_electrocuted:
             return False
 
         globals.DEATH_BLOSSOM_AVAILABLE = False
@@ -240,6 +285,11 @@ class Class_Player(object.Class_Obj):
         return True
 
     def updateMovement(self, player_movement_dir, player_fire, death_blossom=False):
+        if self.is_electrocuted:
+            self.speed[0] = 0.0
+            self.speed[1] = 0.0
+            return
+
         speed_vect = movement.number_to_speed_vect[player_movement_dir]
         self.speed[0] = player_speed_mag * speed_vect[0]
         self.speed[1] = player_speed_mag * speed_vect[1]
@@ -325,3 +375,156 @@ class Class_Player(object.Class_Obj):
         self.list_polygon_pts[0] = (
             NORM_HEAD_LEFT + active_left_arm + active_legs + active_right_arm + NORM_HEAD_RIGHT
         )
+
+    def update(self):
+        if self.is_electrocuted:
+            self.speed[0] = 0.0
+            self.speed[1] = 0.0
+            self.electrocute_timer -= 1
+            if self.electrocute_timer <= 0:
+                self.is_electrocuted = False
+                self.kill()
+                return
+
+            # Update spark particles
+            new_sparks = []
+            for sp in self.sparks:
+                sp['x'] += sp['vx']
+                sp['y'] += sp['vy']
+                sp['life'] -= 1
+                if sp['life'] > 0:
+                    new_sparks.append(sp)
+            self.sparks = new_sparks
+            return
+
+        if self.killState:
+            self.kill()
+            return
+
+        super().update()
+
+    def draw(self, surface):
+        if not self.is_electrocuted:
+            return super().draw(surface)
+
+        dirtyrects = []
+        frame_in_seq = self.electrocute_max_timer - self.electrocute_timer
+
+        # High-voltage tremor / spasm jitter
+        jx = random.randint(-2, 2)
+        jy = random.randint(-1, 1)
+
+        # Alternating convulsive shock poses
+        active_pose = ELECTROCUTED_POSE_A if ((frame_in_seq // 2) % 2 == 0) else ELECTROCUTED_POSE_B
+        fill_col, outline_col = ELECTRIC_COLORS[frame_in_seq % len(ELECTRIC_COLORS)]
+
+        # Center and top-left with jitter
+        cx = self.pos[0] + jx
+        cy = self.pos[1] + jy
+        top_left = [cx - self.size[0] / 2.0, cy - self.size[1] / 2.0]
+
+        # Calculate transformed polygon points
+        poly_pts = []
+        for pt in active_pose:
+            poly_pts.append([pt[0] * self.size[0] + top_left[0], pt[1] * self.size[1] + top_left[1]])
+
+        # In final 6 frames (frames 30 to 36), disintegrate / flicker out
+        show_body = (frame_in_seq < 30) or (frame_in_seq % 2 == 0)
+
+        if show_body:
+            # Outer electric corona glow
+            corona_pts = []
+            for px, py in poly_pts:
+                dx = px - cx
+                dy = py - cy
+                corona_pts.append([px + (1.5 if dx > 0 else -1.5), py + (1.5 if dy > 0 else -1.5)])
+            try:
+                dirtyrects.append(pygame.draw.lines(surface, outline_col, True, corona_pts, 2))
+            except Exception:
+                pass
+
+            # Main electrified body
+            try:
+                dirtyrects.append(pygame.draw.polygon(surface, fill_col, poly_pts, 0))
+                dirtyrects.append(pygame.draw.lines(surface, outline_col, True, poly_pts, 1))
+            except Exception:
+                pass
+
+            # Inner electric skeleton / X-ray spine & skull flash
+            if frame_in_seq % 2 == 1:
+                try:
+                    head_center = (int(cx), int(cy - 8))
+                    dirtyrects.append(pygame.draw.circle(surface, (255, 255, 255), head_center, 2))
+                    dirtyrects.append(pygame.draw.line(surface, (255, 255, 255), (int(cx), int(cy - 6)), (int(cx), int(cy + 6)), 1))
+                    dirtyrects.append(pygame.draw.line(surface, (255, 255, 255), (int(cx - 4), int(cy - 2)), (int(cx + 4), int(cy - 2)), 1))
+                except Exception:
+                    pass
+
+        # Generate crackling lightning discharge arcs
+        emitter_nodes = [
+            (cx, cy - 10),      # Head
+            (cx - 8, cy - 4),   # Left hand
+            (cx + 8, cy - 4),   # Right hand
+            (cx, cy + 1),       # Torso
+            (cx - 5, cy + 11),  # Left foot
+            (cx + 5, cy + 11),  # Right foot
+        ]
+
+        num_arcs = random.randint(3, 5)
+        selected_nodes = random.sample(emitter_nodes, min(num_arcs, len(emitter_nodes)))
+        for start_pt in selected_nodes:
+            angle = random.uniform(0, 2 * math.pi)
+            dist = random.uniform(8, 22)
+            end_pt = (start_pt[0] + math.cos(angle) * dist, start_pt[1] + math.sin(angle) * dist)
+
+            mid_frac = random.uniform(0.3, 0.7)
+            mid_base = (start_pt[0] + (end_pt[0] - start_pt[0]) * mid_frac,
+                        start_pt[1] + (end_pt[1] - start_pt[1]) * mid_frac)
+            perp_angle = angle + math.pi / 2
+            jitter_len = random.uniform(-6, 6)
+            mid_pt = (mid_base[0] + math.cos(perp_angle) * jitter_len,
+                      mid_base[1] + math.sin(perp_angle) * jitter_len)
+
+            arc_color = random.choice([(255, 255, 255), (0, 255, 255), (255, 255, 0), (255, 100, 255)])
+            try:
+                dirtyrects.append(pygame.draw.lines(surface, arc_color, False, [start_pt, mid_pt, end_pt], 1))
+            except Exception:
+                pass
+
+            # Spawn spark particle at arc tip
+            if len(self.sparks) < 30:
+                self.sparks.append({
+                    'x': end_pt[0],
+                    'y': end_pt[1],
+                    'vx': math.cos(angle) * random.uniform(1.0, 2.5),
+                    'vy': math.sin(angle) * random.uniform(1.0, 2.5),
+                    'life': random.randint(3, 6),
+                    'color': arc_color
+                })
+
+        # In final frames, spawn dispersing spark burst
+        if frame_in_seq >= 30 and len(self.sparks) < 35:
+            for _ in range(3):
+                sp_angle = random.uniform(0, 2 * math.pi)
+                sp_speed = random.uniform(2.0, 4.0)
+                self.sparks.append({
+                    'x': cx,
+                    'y': cy,
+                    'vx': math.cos(sp_angle) * sp_speed,
+                    'vy': math.sin(sp_angle) * sp_speed,
+                    'life': random.randint(4, 7),
+                    'color': random.choice([(255, 255, 255), (0, 255, 255), (255, 255, 0)])
+                })
+
+        # Draw active spark particles
+        for sp in self.sparks:
+            sx, sy = int(sp['x']), int(sp['y'])
+            if 0 <= sx < surface.get_width() and 0 <= sy < surface.get_height():
+                try:
+                    surface.set_at((sx, sy), sp['color'])
+                except Exception:
+                    pass
+
+        # Inflate bounding rect for dirtyrect coverage
+        dirtyrects.append(pygame.Rect(int(self.pos[0] - 30), int(self.pos[1] - 30), 60, 60))
+        return dirtyrects

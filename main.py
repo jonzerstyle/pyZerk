@@ -196,16 +196,20 @@ def returnToMenu(start_menu_obj=None):
 
 
 def updateMovement(main_containerObj):
+    player_sprite = globals.PLAYER.sprite if hasattr(globals.PLAYER, "sprite") else (globals.PLAYER.sprites()[0] if len(globals.PLAYER.sprites()) > 0 else None)
+    is_electrocuted = player_sprite is not None and getattr(player_sprite, "is_electrocuted", False)
+
     death_blossom_cmd = main_containerObj.getItem("death_blossom") if main_containerObj else False
     for a in globals.PLAYER.sprites():
         a.updateMovement(main_containerObj.getItem("player_movement"),\
                          main_containerObj.getItem("player_fire"),\
                          death_blossom=death_blossom_cmd)
-    for a in globals.ROBOTS.sprites():
-        a.updateMovement()
-    for a in globals.OTTO.sprites():
-        if len(globals.PLAYER.sprites()) > 0:
-            a.updateMovement(globals.PLAYER.sprites()[0])
+    if not is_electrocuted:
+        for a in globals.ROBOTS.sprites():
+            a.updateMovement()
+        for a in globals.OTTO.sprites():
+            if len(globals.PLAYER.sprites()) > 0:
+                a.updateMovement(globals.PLAYER.sprites()[0])
 
 def detCollisions(keyboObj):
     colSprites = globals.COLLIDABLE.sprites()
@@ -526,6 +530,10 @@ async def main():
                 transition_frame = 0
                 continue
 
+            # Check if player is currently in electrocution death sequence
+            player_sprite = globals.PLAYER.sprite if hasattr(globals.PLAYER, "sprite") else (globals.PLAYER.sprites()[0] if len(globals.PLAYER.sprites()) > 0 else None)
+            is_electrocuted = player_sprite is not None and getattr(player_sprite, "is_electrocuted", False)
+
             # Update robot startle timer
             if globals.ROBOT_STARTLE_TIMER > 0:
                 globals.ROBOT_STARTLE_TIMER -= 1
@@ -533,11 +541,13 @@ async def main():
             # Update object movement
             updateMovement(mainContainerC)
 
-            # Look for collisions 
-            detCollisions(keybo)
+            # Look for collisions (suppressed while player is being electrocuted)
+            if not is_electrocuted:
+                detCollisions(keybo)
 
             # Tick off here once per second
-            genTickTimer = oneSecTimer(genTickTimer)
+            if not is_electrocuted:
+                genTickTimer = oneSecTimer(genTickTimer)
 
             # Update objects
             for a in globals.OBJECTS:
