@@ -417,12 +417,28 @@ This document tracks all features, architectural changes, audio updates, and dep
     All tests pass 100%.
 * **WASM Rebuild & Sync**:
   * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` and deployed to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
+### 19. Player Death Audio: Wilhelm Scream Integration (2026-09-29)
+* **User Request**: Sourced player death sound effect from YouTube: `https://www.youtube.com/watch?v=PP7WJL2JtLs` (iconic Wilhelm scream).
+* **Audio Engineering & Optimization**:
+  * **Source Audio Extraction**: Extracted high-quality audio using `yt-dlp` and `ffmpeg`.
+  * **Zero-Latency Attack Trimming**: Analyzed raw waveform and eliminated ~785 ms of leading digital silence. Sourced the exact zero-crossing at sample 37,692 (0.78525s) with a 5 ms micro-fade-in, ensuring instantaneous scream playback upon wall electrocution or enemy bullet collision with zero delay.
+  * **Natural Tail Preservation**: Preserved natural room decay through 1.980s with a 30 ms linear fade-out to zero, producing a clean 1.195s sample without clicks, pops, or abrupt cuts.
+  * **Format & Resampling**: Polyphase-resampled to native 44,100 Hz mono PCM 16-bit (`player_death.wav`) and OGG Vorbis (`player_death.ogg`).
+  * **Peak Normalization**: Normalized to 0.9500 (-0.45 dBFS, RMS ~0.264), balancing dynamically with pyZerk's SFX mix and Start Menu volume slider.
+  * **Asset Backups**: Preserved legacy arcade death sound assets as `sounds/player_death_arcade_original.wav` and `sounds/player_death_arcade_original.ogg`.
+* **Automated Verification**:
+  * Created [`scratch/test_player_death_sound.py`](file:///home/mjones/agy/pyzerk/scratch/test_player_death_sound.py) testing format properties, Pygame mixer integration, and collision trigger (100% PASS).
+* **WASM Rebuild & Sync**:
+  * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag.
+  * Synchronized updated WASM bundles to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
+  * Executed [`package_godaddy.py`](file:///home/mjones/agy/gemini_integrated_website/package_godaddy.py) to package `numericagenda_godaddy_deploy.zip` with cache-busting version increment (`v=4.12`).
 
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
 
 ### Current Status
+* **Wilhelm Scream Player Death Sound**: Player death now triggers the iconic Wilhelm scream cleanly with zero attack latency, native 44.1 kHz sampling, and Vorbis/PCM encoding across both desktop and browser WebAssembly builds.
 * **Evil Otto Entrance Spawning & Chasing**: Otto spawns at the player's entrance location for the current maze, creating the authentic arcade effect of Otto following behind the player as they navigate through mazes.
 * **Player Death Blossom Ability**: Spacebar triggers simultaneous 8-directional projectile blast with zero delay; limited to 1 per active life; recharges on respawn/new life AND upon completing every 10 levels passed milestone; top HUD indicator shows `DB:` with authentic Green (active) / Red (expired) hardware arcade LED; in-game instructions updated across menu, readme, and web HUD.
 * **Game First Start 5-Second Startle Countdown**: Active at game start (and respawn) with countdown banner `*** ROBOTS STARTLED! NO FIRING (Xs) ***`, dynamically positioned at top or bottom to avoid obscuring the player.
@@ -448,9 +464,10 @@ This document tracks all features, architectural changes, audio updates, and dep
   * +1 extra life awarded every 10 levels passed with celebratory on-screen banner.
   * Level loop around when surpassing max level (50) wrapping cleanly to Level 1 with loop milestones (`[LOOP 2]`).
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
-* **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place.
+* **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place; Wilhelm scream active on player death.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **All 16 Test Suites Passing (100%)**:
+* **All 17 Test Suites Passing (100%)**:
+  * `scratch/test_player_death_sound.py`: PASSED (100%)
   * `scratch/test_death_blossom.py`: PASSED (100%)
   * `scratch/test_resume_and_startle.py`: PASSED (100%)
   * `scratch/test_startle_banner_render.py`: PASSED (100%)
@@ -471,7 +488,3 @@ This document tracks all features, architectural changes, audio updates, and dep
 ### Next Steps
 1. Commit tracking documentation to branch `agy_1`.
 2. Push branch `agy_1` to GitHub (`git push origin agy_1`).
-
-
-
-
