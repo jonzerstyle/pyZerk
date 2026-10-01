@@ -455,6 +455,20 @@ This document tracks all features, architectural changes, audio updates, and dep
   * Synchronized updated WASM bundles to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
   * Executed [`package_godaddy.py`](file:///home/mjones/agy/gemini_integrated_website/package_godaddy.py) to package `numericagenda_godaddy_deploy.zip` with cache-busting version increment (`v=4.13`).
 
+### 16. Maze Exit Scoring (+1 Point Per Maze Exited)
+* **Feature Overview**:
+  * Added +1 point award to `globals.SCORE` whenever the player successfully exits a maze.
+  * Integrated across both maze completion pathways in [`main.py`](file:///home/mjones/agy/pyzerk/main.py):
+    1. **Green Exit Doorway Escape**: Touching a perimeter green energy exit (`globals.PENDING_EXIT`) awards `globals.SCORE += 1` immediately before starting the smooth scrolling maze transition.
+    2. **Room Clear**: Eliminating all hostile robots in a room (`len(globals.ROBOTS.sprites()) == 0`) clears and exits the maze to the next level, awarding `globals.SCORE += 1`.
+  * **Controls & HUD Documentation**:
+    * Updated controls legend in [`menu.py`](file:///home/mjones/agy/pyzerk/menu.py) to inform players: `Destroy robots & exit mazes (+1 pt each)! Beware of OTTO!`.
+  * **Automated Unit Tests**:
+    * Created [`scratch/test_maze_exit_scoring.py`](file:///home/mjones/agy/pyzerk/scratch/test_maze_exit_scoring.py) validating score initialization, doorway escape point award, room clear point award, live HUD rendering, and multi-maze progression (100% PASS).
+  * **WebAssembly Rebuild**:
+    * Rebuilt `pyzerk.apk` and `pyzerk.tar.gz` via Pygbag.
+    * Synchronized updated WASM bundles to both [`webdeploy/`](file:///home/mjones/agy/pyzerk/webdeploy) and [`../gemini_integrated_website/pyzerk/`](file:///home/mjones/agy/gemini_integrated_website/pyzerk).
+
 ---
 
 ## 💾 Current Session State & Handoff Summary (Ready to Resume)
@@ -489,7 +503,8 @@ This document tracks all features, architectural changes, audio updates, and dep
 * **Start Menu System**: Fully implemented in `menu.py` with volume sliders, live sound auditioning, high score marquee, and controls legend.
 * **Audio Engine**: Channel 0 reserved exclusively for soundtrack looping; SFX isolated to channels 1–15; unwatermarked Star Trek ambient soundscape in place; Wilhelm scream active on player death.
 * **WebAssembly**: Pygbag package rebuilt and synchronized to `webdeploy/` and `../gemini_integrated_website/pyzerk/`.
-* **All 18 Test Suites Passing (100%)**:
+* **All 19 Test Suites Passing (100%)**:
+  * `scratch/test_maze_exit_scoring.py`: PASSED (100%)
   * `scratch/test_electrified_death.py`: PASSED (100%)
   * `scratch/test_player_death_sound.py`: PASSED (100%)
   * `scratch/test_death_blossom.py`: PASSED (100%)

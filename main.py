@@ -498,7 +498,8 @@ async def main():
                 if current_maze is not None:
                     current_maze.render_to_surface(old_maze_surf, grey_mode=False)
 
-                # Advance level and stats
+                # Advance level, score, and stats
+                globals.SCORE += 1
                 globals.LEVELS_PASSED += 1
                 if globals.LEVELS_PASSED % 10 == 0:
                     globals.LIVES += 1
@@ -573,6 +574,7 @@ async def main():
                             sounds.playSound(sounds.gameOverSound)
             elif len(globals.ROBOTS.sprites()) == 0:
                 # Level cleared!
+                globals.SCORE += 1
                 globals.LEVELS_PASSED += 1
                 # Award one life back and recharge Death Blossom every ten levels passed
                 if globals.LEVELS_PASSED % 10 == 0:

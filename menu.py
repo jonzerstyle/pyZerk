@@ -438,7 +438,7 @@ class Class_StartMenu:
             ("LIVES SYSTEM:", "Start with 3 lives. Pass every 10 levels to earn +1 extra life!"),
             ("ESC / ENTER:", "Pause gameplay to open Menu; select Resume Game to continue anytime"),
             ("MENU KEYS:",  "UP/DOWN = Select option | LEFT/RIGHT = Volume | ENTER = Confirm / Sample"),
-            ("OBJECTIVE:",  "Eliminate all robots or reach maze exits! Beware of OTTO!")
+            ("OBJECTIVE:",  "Eliminate robots & exit mazes (+1 pt each)! Beware of OTTO!")
         ]
         
         line_y = y + 35
